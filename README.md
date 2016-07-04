@@ -119,7 +119,8 @@ Once the download is complete, you may choose to receive a Telegram notification
 
 ## Known Issues
 
-* DestroyKeyboard doesn't work properly - Custom markup keyboard stays intact 
+* DestroyKeyboard doesn't work properly - Custom markup keyboard stays intact
+* Windows support
 
 ## License
 This is free software under the GPL v3 open source license. Feel free to do with it what you wish, but any modification must be open sourced. A copy of the license is included.
