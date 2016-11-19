@@ -1,10 +1,18 @@
-## Telegramer
+# <p align="center">Telegramer
 
 Telegramer is a Deluge plugin for sending notifications, adding and viewing torrents using [Telegram](https://telegram.org/) messenger. It features both a GTK and Web UI. 
 
 The plugin runs a [Telegram bot](https://telegram.org/blog/bot-revolution) on the host machine which listens for commands the user sends, allowing you to list active torrents, download new torrents, and receive notifications when torrents are added to Deluge and when they finish downloading.
 
 Since the bot runs locally and is owned by the same user running it, Telegramer provides the best of both worlds: [privacy](https://telegram.org/privacy) and [security](https://telegram.org/faq#security). Only you can execute your bot's commands.
+
+  * [Requirements](#requirements)
+  * [Installation](#installation)
+  * [Usage](#usage)
+  * [Development](#development)
+  * [Screenshots](#screenshots)
+  * [Known Issues](#known-issues)
+  * [License](#license)
 
 ## Requirements
 
