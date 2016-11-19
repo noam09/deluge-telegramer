@@ -18,15 +18,22 @@ $ pip install --upgrade PyTelegramBotAPI
 $ pip install --upgrade requests
 ```
 
+**Note:** If you run Deluge using a different or dedicated user account (e.g. `deluge`), make sure the user will have appropriate permissions to use these dependencies. You may want to install the dependencies using the root account to ensure that they are available for system-wide usage. To install as root:
+```sh
+$ sudo pip install --upgrade PyTelegramBotAPI
+$ sudo pip install --upgrade requests
+```
+
 ## Installation
 
 Installing Telegramer is easy:
 * [Determine Deluge Python version](http://dev.deluge-torrent.org/wiki/Troubleshooting#PythonVersion)
 * Build or download a plugin egg:
-    * To build a Python egg, [download the source code](https://github.com/noam09/deluge-telegramer/archive/master.zip) and extract the archive anywhere.
-    * Open a Command Prompt or Terminal window and navigate to the extracted archive directory.
+    * **Note:** As stated above, if you run Deluge using a different or dedicated user account (e.g. `deluge`), make sure the user has appropriate permissions to use the plugin. This applies to both the plugin itself and also the dependencies it requires. You may want to build the plugin using the same account (`sudo -u deluge python setup.py bdist_egg`), and under the same user's home directory (e.g. `/home/deluge` or `/var/lib/deluge`) 
+    * To build a Python egg, either [download the source code](https://github.com/noam09/deluge-telegramer/archive/master.zip) and extract the archive anywhere, or `git clone https://github.com/noam09/deluge-telegramer.git` to a directory of your choosing.
+    * Open a Command Prompt or Terminal window and navigate to the extracted archive or clone directory.
     * Run `python setup.py bdist_egg` to build the plugin. If you have Python 3 installed as well, you may need to run `python2 setup.py bdist_egg` instead.
-    * To install the plugin using the Deluge GUI, go to `Preferences -> Plugins` and click `Install Plugin`. Locate the plugin egg and select it to install. You should be able to find it in the extracted archve directory, inside the `dist` directory.
+    * To install the plugin using the Deluge GUI, go to `Preferences -> Plugins` and click `Install Plugin`. Locate the plugin egg and select it to install. You should be able to find it in the same directory, inside the `dist` directory.
     * For more detailed installation instructions, see the [Deluge wiki](http://dev.deluge-torrent.org/wiki/Plugins#InstallingPluginEggs).
 
 After installing the plugin, restarting Deluge and the Deluge daemon is recommended to avoid errors. 
