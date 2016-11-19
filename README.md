@@ -40,9 +40,11 @@ Installing Telegramer is easy:
 * [Determine Deluge Python version](http://dev.deluge-torrent.org/wiki/Troubleshooting#PythonVersion)
 * Build or download a plugin egg:
     * **Note:** As stated above, if you run Deluge using a different or dedicated user account (e.g. `deluge`), make sure the user has appropriate permissions to use the plugin. This applies to both the plugin itself and also the dependencies it requires. You may want to build the plugin using the same account (`sudo -u deluge python setup.py bdist_egg`), and under the same user's home directory (e.g. `/home/deluge` or `/var/lib/deluge`) 
-    * To build a Python egg, either [download the source code](https://github.com/noam09/deluge-telegramer/archive/master.zip) and extract the archive anywhere, or run `git clone https://github.com/noam09/deluge-telegramer.git` in a directory of your choosing.
-    * Open a Command Prompt or Terminal and navigate to the extracted archive or cloned directory.
-    * Run `python setup.py bdist_egg` to build the plugin. If you have Python 3 installed as well, you may need to run `python2 setup.py bdist_egg` instead.
+    * Prebuilt plugin eggs can be downloaded from the [releases](https://github.com/noam09/deluge-telegramer/releases) page.
+    * To build a Python egg: 
+        * Either [download the source code](https://github.com/noam09/deluge-telegramer/archive/master.zip) and extract the archive anywhere, or run `git clone https://github.com/noam09/deluge-telegramer.git` in a directory of your choosing.
+        * Open a Command Prompt or Terminal and navigate to the extracted archive or cloned directory.
+        * Run `python setup.py bdist_egg` to build the plugin. If you have Python 3 installed as well, you may need to run `python2 setup.py bdist_egg` instead.
     * To install the plugin using the Deluge graphical user interface, go to `Preferences -> Plugins` and click `Install Plugin`. Locate the plugin egg and select it to install. You should be able to find it in the same directory to which it was extracted or cloned, inside the `dist` directory.
     * For more detailed installation instructions, see the [Deluge wiki](http://dev.deluge-torrent.org/wiki/Plugins#InstallingPluginEggs).
 
