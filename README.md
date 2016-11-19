@@ -20,8 +20,10 @@ $ pip install --upgrade requests
 
 **Note:** If you run Deluge using a different or dedicated user account (e.g. `deluge`), make sure the user will have appropriate permissions to use these dependencies. You may want to install the dependencies using the root account to ensure that they are available for system-wide usage. To install as root:
 ```sh
-$ sudo pip install --upgrade PyTelegramBotAPI
-$ sudo pip install --upgrade requests
+$ sudo su
+$ pip install --upgrade PyTelegramBotAPI
+$ pip install --upgrade requests
+$ exit
 ```
 
 ## Installation
