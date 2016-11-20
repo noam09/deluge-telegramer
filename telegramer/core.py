@@ -204,12 +204,13 @@ class Core(CorePluginBase):
                 self.bot.set_update_listener(self.telegram_handle_messages)
                 if self.config['telegram_user']:
                     telegram_user_list = None
+                    self.whitelist.append(str(self.config['telegram_user']))
                     if self.config['telegram_users']:
                         telegram_user_list = filter(None,
                             [x.strip() for x in str(self.config['telegram_users']).split(',')])
-                    self.whitelist.append(str(self.config['telegram_user']))
-                    # Merge with whitelist and remove duplicates - order will be lost
-                    self.whitelist = list(set(self.whitelist + telegram_user_list))
+                        # Merge with whitelist and remove duplicates - order will be lost
+                        self.whitelist = list(set(self.whitelist + telegram_user_list))
+
                 reactor.callLater(2, self.connect_events)
                 log.error(prelog() + 'Start thread for polling')
                 # Initialize polling thread
