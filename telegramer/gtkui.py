@@ -77,6 +77,7 @@ class GtkUI(GtkPluginBase):
             "telegram_notify_finished":self.glade.get_widget("telegram_notify_finished").get_active(),
             "telegram_token":self.glade.get_widget("telegram_token").get_text(),
             "telegram_user":self.glade.get_widget("telegram_user").get_text(),
+            "telegram_users":self.glade.get_widget("telegram_users").get_text(),
             "cat1":self.glade.get_widget("cat1").get_text(),
             "dir1":self.glade.get_widget("dir1").get_text(),
             "cat2":self.glade.get_widget("cat2").get_text(),
@@ -95,6 +96,7 @@ class GtkUI(GtkPluginBase):
         self.glade.get_widget("telegram_notify_finished").set_active(config["telegram_notify_finished"])
         self.glade.get_widget("telegram_token").set_text(config["telegram_token"])
         self.glade.get_widget("telegram_user").set_text(config["telegram_user"])
+        self.glade.get_widget("telegram_users").set_text(config["telegram_users"])
         self.glade.get_widget("cat1").set_text(config["cat1"])
         self.glade.get_widget("dir1").set_text(config["dir1"])
         self.glade.get_widget("cat2").set_text(config["cat2"])

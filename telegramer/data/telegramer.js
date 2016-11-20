@@ -71,6 +71,13 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             autoWidth: true,
             value: 'Contact @MyIDbot'
         }));
+        this.opts.bind('telegram_users', fieldset.add({
+            fieldLabel: _('Additional IDs'),
+            anchor:'100%',
+            name: 'telegram_users',
+            autoWidth: true,
+            value: 'IDs should be comma-separated'
+        }));
         fieldset = this.add({
             xtype: 'fieldset',
             title: _('Notifications'),
@@ -190,6 +197,9 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             if (!Ext.isEmpty(config['telegram_user'])) {
                 config['telegram_user'] = config['telegram_user'];
             }
+            if (!Ext.isEmpty(config['telegram_users'])) {
+                config['telegram_users'] = config['telegram_users'];
+            }
             if (!Ext.isEmpty(config['telegram_notify_added'])) {
                 config['telegram_notify_added'] = config['telegram_notify_added'];
             }
@@ -228,6 +238,9 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             }
             if (!Ext.isEmpty(changed['telegram_user'])) {
             changed['telegram_user'] = changed['telegram_user'];
+            }
+            if (!Ext.isEmpty(changed['telegram_users'])) {
+            changed['telegram_users'] = changed['telegram_users'];
             }
             if (!Ext.isEmpty(changed['telegram_notify_added'])) {
             changed['telegram_notify_added'] = changed['telegram_notify_added'];

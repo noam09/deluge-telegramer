@@ -27,9 +27,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with deluge.    If not, write to:
-#   The Free Software Foundation, Inc.,
-#   51 Franklin Street, Fifth FloorMarkdown
-#   Boston, MA  02110-1301, USA.
+# 	The Free Software Foundation, Inc.,
+# 	51 Franklin Street, Fifth FloorMarkdown
+# 	Boston, MA  02110-1301, USA.
 #
 #    In addition, as a special exception, the copyright holders give
 #    permission to link the code of portions of this program with the OpenSSL
@@ -103,6 +103,7 @@ except ImportError as e:
 
 DEFAULT_PREFS = {"telegram_token": "Contact @BotFather and create a new bot",
                 "telegram_user": "Contact @MyIDbot",
+                "telegram_users": "Contact @MyIDbot",
                 "telegram_notify_finished": True,
                 "telegram_notify_added": True,
                 "dir1": "",
@@ -202,7 +203,13 @@ class Core(CorePluginBase):
                 self.bot = telebot.TeleBot(self.config['telegram_token'])
                 self.bot.set_update_listener(self.telegram_handle_messages)
                 if self.config['telegram_user']:
+                    telegram_user_list = None
+                    if self.config['telegram_users']:
+                        telegram_user_list = filter(None,
+                            [x.strip() for x in str(self.config['telegram_users']).split(',')])
                     self.whitelist.append(str(self.config['telegram_user']))
+                    # Merge with whitelist and remove duplicates - order will be lost
+                    self.whitelist = list(set(self.whitelist + telegram_user_list))
                 reactor.callLater(2, self.connect_events)
                 log.error(prelog() + 'Start thread for polling')
                 # Initialize polling thread
@@ -227,14 +234,19 @@ class Core(CorePluginBase):
     def update(self):
         pass
 
-    def telegram_send(self, message, parse_mode=None):
+    def telegram_send(self, message, to=None, parse_mode=None):
         if self.bot:
             log.debug(prelog() + 'Send message')
+            if not to:
+                to = self.config['telegram_user']
             if parse_mode:
-                return self.bot.send_message(self.config['telegram_user'], message,
+                #return self.bot.send_message(self.config['telegram_user'], message,
+                #    parse_mode='Markdown')
+                return self.bot.send_message(to, message,
                     parse_mode='Markdown')
             else:
-                return self.bot.send_message(self.config['telegram_user'], message)
+                #return self.bot.send_message(self.config['telegram_user'], message)
+                return self.bot.send_message(to, message)
         return
 
     def telegram_poll_start(self):
@@ -276,29 +288,34 @@ class Core(CorePluginBase):
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
     def cmd_help(self, msg):
-        help_msg = ['/add - Add a new torrent',
-                '/list - List all torrents',
-                '/down - List downloading torrents',
-                '/up - List uploading torrents',
-                '/paused - List paused torrents',
-                '/help - Show this help message']
-        self.telegram_send('\n'.join(help_msg), parse_mode='Markdown')
+        if str(msg.chat.id) == str(self.config['telegram_user']):
+            help_msg = ['/add - Add a new torrent',
+                    '/list - List all torrents',
+                    '/down - List downloading torrents',
+                    '/up - List uploading torrents',
+                    '/paused - List paused torrents',
+                    '/help - Show this help message']
+            self.telegram_send('\n'.join(help_msg), to=msg.chat.id, parse_mode='Markdown')
 
     def cmd_list(self, msg):
-        #log.error(self.list_torrents())
-        self.telegram_send(self.list_torrents(), parse_mode='Markdown')
+        if str(msg.chat.id) == str(self.config['telegram_user']):
+            #log.error(self.list_torrents())
+            self.telegram_send(self.list_torrents(), to=msg.chat.id, parse_mode='Markdown')
 
     def cmd_down(self, msg):
-        self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Downloading'),
-            parse_mode='Markdown')
+        if str(msg.chat.id) == str(self.config['telegram_user']):
+            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Downloading'),
+                to=msg.chat.id, parse_mode='Markdown')
 
     def cmd_up(self, msg):
-        self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Seeding'),
-            parse_mode='Markdown')
+        if str(msg.chat.id) == str(self.config['telegram_user']):
+            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Seeding'),
+                to=msg.chat.id, parse_mode='Markdown')
 
     def cmd_paused(self, msg):
-        self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state']  in ('Paused', 'Queued')),
-            parse_mode='Markdown')
+        if str(msg.chat.id) == str(self.config['telegram_user']):
+            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state']  in ('Paused', 'Queued')),
+                to=msg.chat.id, parse_mode='Markdown')
 
     def cmd_add(self, msg):
         self.set_dirs = {}
