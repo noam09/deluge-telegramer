@@ -55,9 +55,10 @@ After installing the plugin, restarting Deluge and the Deluge daemon is recommen
 After you've installed and enabled the plugin using the Deluge GTK or Web UI, you will need to configure a bot token and Telegram user ID. In order to do so, send a message to [@BotFather](https://telegram.me/BotFather) and create a new bot according to BotFather's instructions. Once you've created your bot, you will be able to generate a token for your newly created bot. Copy it to the plugin's configuration under "Telegram Bot Token". Before you continue, make sure you initiate a conversation with your new bot by sending it the `/start` command.
 
 Afterwards, send a message to [@MyIDbot](https://telegram.me/myidbot) and send it the `/getid` command to receive your Telegram user ID. Copy your user ID to Telegramer's configuration under "Telegram User ID".
+
 You may also add additional comma-separated user IDs in the "Additional IDs" field. Any additional users will have the ability to send downloads to Deluge using the `/add` command. All other commands and notifications will only be available to and received by the bot owner (specified in "Telegram User ID").
 
-Now, test these settings by clicking the **`Test`** button. you should receive a message from your newly created bot. Hooray!
+Now, test these settings by clicking the **`Test`** button. You should receive a message from your newly created bot. Hooray!
 
 **Commands:** Send your bot the `/help` command to see what commands are supported.
 * The `/list` command will allow you to see a list of all torrents, whereas the `/down` and `/up` commands will show you only those downloading or uploading.
