@@ -27,9 +27,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with deluge.    If not, write to:
-# 	The Free Software Foundation, Inc.,
-# 	51 Franklin Street, Fifth FloorMarkdown
-# 	Boston, MA  02110-1301, USA.
+#   The Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth FloorMarkdown
+#   Boston, MA  02110-1301, USA.
 #
 #    In addition, as a special exception, the copyright holders give
 #    permission to link the code of portions of this program with the OpenSSL
@@ -326,7 +326,9 @@ class Core(CorePluginBase):
             for i in xrange(1, 4):
                 if self.config['cat'+str(i)] == msg.text:
                         cat_id = str(i)
-                        self.opts = {'download_location': self.config['dir'+cat_id]}
+                        # move_completed_path vs download_location
+                        self.opts = {'move_completed_path': self.config['dir'+cat_id],
+                            'move_completed': True}
 
         self.label = None
         markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True, row_width=3)
