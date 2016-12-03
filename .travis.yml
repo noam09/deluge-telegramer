@@ -38,6 +38,7 @@ env:
     - TOX_ENV=testcoverage-html
 #    - TOX_ENV=docs
 #    - TOX_ENV=todo
+#    - test
 
 virtualenv:
   system_site_packages: true
