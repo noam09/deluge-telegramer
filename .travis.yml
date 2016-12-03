@@ -1,0 +1,55 @@
+sudo: true
+
+language: python
+
+python:
+    - "2.7"
+
+before_install:
+  - lsb_release -a
+  - sudo add-apt-repository ppa:deluge-team/ppa -y
+  - sudo apt-get update
+
+# command to install dependencies
+install:
+  - bash -c "echo $APTPACKAGES"
+  - sudo apt-get install $APTPACKAGES
+  - easy_install -U pip
+  - pip --version
+  - pip install "tox==2.1.1"
+  - tox --version
+  - mkdir install
+  - export PYTHONPATH=$PYTHONPATH:$PWD/install
+  - python setup.py develop --install-dir=install
+
+env:
+  global:
+    - PIP_DOWNLOAD_CACHE=$HOME/.pip-cache/
+    - APTPACKAGES="deluge python-libtorrent python-gobject python-glade2"
+    - DISPLAY=:99.0
+  matrix:
+    - TOX_ENV=pydef              APTPACKAGES="$APTPACKAGES"
+    - TOX_ENV=all                APTPACKAGES="$APTPACKAGES"
+    - TOX_ENV=trial              APTPACKAGES="$APTPACKAGES"
+    - TOX_ENV=flake8
+    - TOX_ENV=flake8-complexity
+    - TOX_ENV=isort
+    - TOX_ENV=testcoverage
+    - TOX_ENV=testcoverage-html
+#    - TOX_ENV=docs
+#    - TOX_ENV=todo
+
+virtualenv:
+  system_site_packages: true
+
+# We use xvfb for the GTKUI tests
+before_script:
+  - python -c "import deluge; print deluge"
+  - python -c "import libtorrent as lt; print lt.version"
+  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16"
+
+script:
+  - bash -c "echo $DISPLAY"
+  - bash -c "echo $PWD"
+  - bash -c "echo $PYTHONPATH"
+  - tox -e $TOX_ENV
