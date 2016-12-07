@@ -43,7 +43,7 @@ from setuptools import setup
 __plugin_name__ = "Telegramer"
 __author__ = "Noam"
 __author_email__ = "noamgit@gmail.com"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __url__ = "https://github.com/noam09"
 __license__ = "GPLv3"
 __description__ = "Control Deluge using Telegram"

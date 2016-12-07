@@ -161,7 +161,10 @@ INFO_DICT = (('queue', lambda i,s: i!=-1 and str(i) or '#'),
 
 INFOS = [i[0] for i in INFO_DICT]
 
-HIDE_KB = telebot.types.ReplyKeyboardHide()
+try:
+    HIDE_KB = telebot.types.ReplyKeyboardRemove()
+except:
+    HIDE_KB = telebot.types.ReplyKeyboardHide()
 
 def format_torrent_info(torrent):
     status = torrent.get_status(INFOS)
