@@ -1,9 +1,13 @@
 #
 # setup.py
 #
-# Copyright (C) 2016 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
 # https://github.com/noam09
 #
+# Package inclusion method thanks to YaRSS2 developers
+# Copyright (C) 2012-2015 bendikro bro.devel+yarss2@gmail.com
+# Copyright (C) 2009 Camillo Dell'mour <cdellmour@gmail.com>
+# 
 # Basic plugin template created by:
 # Copyright (C) 2008 Martijn Voncken <mvoncken@gmail.com>
 # Copyright (C) 2007-2009 Andrew Resch <andrewresch@gmail.com>
@@ -37,18 +41,21 @@
 #    this exception statement from your version. If you delete this exception
 #    statement from all source files in the program, then also delete it here.
 #
-#
 
-from setuptools import setup
+from setuptools import setup, find_packages
 __plugin_name__ = "Telegramer"
 __author__ = "Noam"
 __author_email__ = "noamgit@gmail.com"
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 __url__ = "https://github.com/noam09"
 __license__ = "GPLv3"
 __description__ = "Control Deluge using Telegram"
-__long_description__ = """Send notifications, add and view torrents on Deluge using Telegram messenger."""
-__pkg_data__ = {__plugin_name__.lower(): ["template/*", "data/*"]}
+__long_description__ = """
+Send notifications, add and view torrents on Deluge
+using Telegram messenger
+"""
+__pkg_data__ = {__plugin_name__.lower(): ["data/*"]}
+packages = find_packages()
 
 setup(
     name=__plugin_name__,
@@ -59,9 +66,8 @@ setup(
     url=__url__,
     license=__license__,
     long_description=__long_description__ if __long_description__ else __description__,
-    packages=[__plugin_name__.lower()],
+    packages=packages,
     package_data = __pkg_data__,
-    install_requires=['requests', 'pyTelegramBotAPI'],
     entry_points="""
     [deluge.plugin.core]
     %s = %s:CorePlugin
@@ -69,5 +75,7 @@ setup(
     %s = %s:GtkUIPlugin
     [deluge.plugin.web]
     %s = %s:WebUIPlugin
+    [telegramer.libpaths]
+    include = telegramer.include
     """ % ((__plugin_name__, __plugin_name__.lower())*3)
 )

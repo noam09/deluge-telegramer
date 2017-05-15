@@ -1,7 +1,7 @@
 #
 # common.py
 #
-# Copyright (C) 2009 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
 #
 # Basic plugin template created by:
 # Copyright (C) 2008 Martijn Voncken <mvoncken@gmail.com>

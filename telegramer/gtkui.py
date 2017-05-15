@@ -1,7 +1,7 @@
 #
 # gtkui.py
 #
-# Copyright (C) 2016 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
 # https://github.com/noam09
 #
 # Basic plugin template created by:
