@@ -16,39 +16,25 @@ Since the bot runs locally and is owned by the same user running it, Telegramer 
 
 ## Requirements
 
-Currently Telegramer has been tested mainly on Linux. Support for Windows is in the works.
+Currently Telegramer has been tested mainly on Linux using Deluge 1.3.14. Support for Windows is brand new and ready for testing.
 Make sure you have Python [`setuptools`](https://pypi.python.org/pypi/setuptools#installation-instructions) installed in order to build the plugin.
-The plugin itself requires the [`PyTelegramBotAPI`](https://github.com/eternnoir/pyTelegramBotAPI) Python module to be installed, as well as the [`requests`](http://docs.python-requests.org/) module.
-To install these, use your operating system's package manager, install them manually, or use [`pip`](https://pip.pypa.io/en/stable/installing/):
+The plugin itself works with the [`python-telegram-bot`](https://github.com/python-telegram-bot/python-telegram-bot) wrapper, which comes pre-packaged.
 
-```sh
-$ pip install --upgrade PyTelegramBotAPI
-$ pip install --upgrade requests
-```
-
-**Note:** If you run Deluge using a different or dedicated user account (e.g. `deluge`), make sure the user will have appropriate permissions to use these dependencies. You may want to install the dependencies using the root account to ensure that they are available for system-wide usage. To install as root:
-```sh
-$ sudo su
-$ pip install --upgrade PyTelegramBotAPI
-$ pip install --upgrade requests
-$ exit
-```
+Since all necessary modules are now packaged within the Python egg, there are no additional requirements.
 
 ## Installation
 
 Installing Telegramer is easy:
-* [Determine Deluge Python version](http://dev.deluge-torrent.org/wiki/Troubleshooting#PythonVersion)
 * Build or download a plugin egg:
-    * **Note:** As stated above, if you run Deluge using a different or dedicated user account (e.g. `deluge`), make sure the user has appropriate permissions to use the plugin. This applies to both the plugin itself and also the dependencies it requires. You may want to build the plugin using the same account (`sudo -u deluge python setup.py bdist_egg`), and under the same user's home directory (e.g. `/home/deluge` or `/var/lib/deluge`).
     * Prebuilt plugin eggs can be downloaded from the [releases](https://github.com/noam09/deluge-telegramer/releases) page.
-    * To build a Python egg:
+    * If you would rather build a Python egg from source:
         * Either [download the source code](https://github.com/noam09/deluge-telegramer/archive/master.zip) and extract the archive anywhere, or run `git clone https://github.com/noam09/deluge-telegramer.git` in a directory of your choosing.
         * Open a Command Prompt or Terminal and navigate to the extracted archive or cloned directory.
-        * Run `python setup.py bdist_egg` to build the plugin. If you have Python 3 installed as well, you may need to run `python2 setup.py bdist_egg` instead.
-    * To install the plugin using the Deluge graphical user interface, go to `Preferences -> Plugins` and click `Install Plugin`. Locate the plugin egg and select it to install. You should be able to find it in the same directory to which it was extracted or cloned, inside the `dist` directory.
+        * Run `python setup.py bdist_egg` to build the plugin. If you have Python 3 installed alongside Python 2, you may need to run `python2 setup.py bdist_egg` instead.
+    * To install the plugin using the Deluge graphical user interface, go to `Preferences -> Plugins` and click `Install Plugin`. Locate the plugin egg and select it to install. If you built an egg from source, you should be able to find it in the same directory to which it was extracted or cloned, inside the `dist` directory.
     * For more detailed installation instructions, see the [Deluge wiki](http://dev.deluge-torrent.org/wiki/Plugins#InstallingPluginEggs).
 
-After installing the plugin, restarting Deluge and the Deluge daemon is recommended in order to avoid errors.
+After installing the plugin, restarting Deluge and the Deluge daemon (`deluged`) is recommended in order to avoid errors.
 
 ## Usage
 
@@ -66,6 +52,7 @@ Now, test these settings by clicking the **`Test`** button. You should receive a
 * Contact [@BotFather](https://telegram.me/BotFather) again to give your bot a profile photo, change its name, or add quick-access commands to your bot using `/setcommands`.
 
 **Categories:** You may also notice the Category fields in the Telegramer configuration panel. This is an optional feature which allows you to set pairs of Categories and matching Directories to which you would like to move torrent contents upon completion. For example, if you set `Category 1` to `Music` and `Directory 1` to `C:\Music` or `/home/user/Music`, your bot will prompt you to save in the `Music` category when you use the `/add` command to add a new torrent. Now the torrent you download will be moved to the appropriate directory when finished! Make sure the directories you set in the category configuration really exist, or else the categories won't show up as options when adding a new torrent.
+Alternatively, you may also enter a new or different directory to which you'd like to save files once they're finished downloading. Simply send your bot the directory path in quotes (e.g. `"/home/user/NewDirectory/"`).
 
 **Labels:**
 In addition to Categories, you can use the built-in Label plugin to label torrents using existing labels or by creating a new label.
@@ -140,8 +127,7 @@ Once the download is complete, you may choose to receive a Telegram notification
 
 ## Known Issues
 
-* DestroyKeyboard doesn't work properly - Custom markup keyboard stays intact
-* Windows support
+* Bot stops functioning following sleep/suspend
 
 ## License
 This is free software under the GPL v3 open source license. Feel free to do with it what you wish, but any modification must be open sourced. A copy of the license is included.
