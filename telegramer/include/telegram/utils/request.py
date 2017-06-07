@@ -34,9 +34,12 @@ import traceback
 from deluge.log import LOG as log
 
 #log.setLevel(logging.DEBUG)
-
 try:
     import certifi
+except Exception as e:
+    log.error(str(e) + '\n' + traceback.format_exc())
+
+try:
     import urllib3
     from urllib3.connection import HTTPConnection
 except Exception as e:
