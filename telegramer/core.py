@@ -381,12 +381,16 @@ class Core(CorePluginBase):
 
                 keyboard_options = []
                 self.label = None
-                component.get('Core').enable_plugin('Label')
-                label_plugin = component.get('CorePlugin.Label')
-                if label_plugin:
-                    # Create label if neccessary
-                    for g in label_plugin.get_labels():
-                        keyboard_options.append([g])
+                try:
+                    component.get('Core').enable_plugin('Label')
+                    label_plugin = component.get('CorePlugin.Label')
+                    if label_plugin:
+                        # Create label if neccessary
+                        for g in label_plugin.get_labels():
+                            keyboard_options.append([g])
+                except Exception as e:
+                    log.debug(prelog() + 'Enabling Label plugin failed')
+                    log.error(prelog() + str(e) + '\n' + traceback.format_exc())
                 keyboard_options.append([STRINGS['no_label']])
 
                 update.message.reply_text(
