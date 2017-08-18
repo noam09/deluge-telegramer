@@ -190,7 +190,7 @@ class Core(CorePluginBase):
                             [x.strip() for x in str(self.config['telegram_users']).split(',')])
                         # Merge with whitelist and remove duplicates - order will be lost
                         self.whitelist = list(set(self.whitelist + telegram_user_list))
-                        log.debug(prelog() + self.whitelist)
+                        log.debug(prelog() + str(self.whitelist))
 
                 reactor.callLater(2, self.connect_events)
 
