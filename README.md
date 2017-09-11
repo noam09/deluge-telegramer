@@ -128,6 +128,7 @@ Once the download is complete, you may choose to receive a Telegram notification
 ## Known Issues
 
 * Bot stops functioning following sleep/suspend
+* Bot stops receiving commands after a while ([#8](https://github.com/noam09/deluge-telegramer/issues/8))
 
 ## License
 This is free software under the GPL v3 open source license. Feel free to do with it what you wish, but any modification must be open sourced. A copy of the license is included.
