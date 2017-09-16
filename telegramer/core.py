@@ -98,7 +98,9 @@ HEADERS = {'User-Agent':
 STICKERS = {'lincoln'   : 'BQADBAADGQADyIsGAAE2WnfSWOhfUgI',
             'dali'      : 'BQADBAADHAADyIsGAAFZfq1bphjqlgI',
             'chan'      : 'BQADBAADPQADyIsGAAHaVWyyLugSFAI',
-            'marley'    : 'BQADBAADJQADyIsGAAGdzbYn4WkdaAI'}
+            'marley'    : 'BQADBAADJQADyIsGAAGdzbYn4WkdaAI',
+            'snow'      : 'CAADAgADZQUAAgi3GQJyjRNCuIA54gI',
+            'borat'     : 'CAADBAADmwQAAjJQbQAB5DpM4iETWoQC'}
 
 EMOJI = {'seeding'      : u'\u23eb',
         'queued'        : u'\u23ef',
