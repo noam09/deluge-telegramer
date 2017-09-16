@@ -27,9 +27,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with deluge.    If not, write to:
-# 	The Free Software Foundation, Inc.,
-# 	51 Franklin Street, Fifth FloorMarkdown
-# 	Boston, MA  02110-1301, USA.
+#   The Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth FloorMarkdown
+#   Boston, MA  02110-1301, USA.
 #
 #    In addition, as a special exception, the copyright holders give
 #    permission to link the code of portions of this program with the OpenSSL
@@ -93,7 +93,7 @@ DEFAULT_PREFS = {"telegram_token": "Contact @BotFather and create a new bot",
                 "cat3": ""}
 
 HEADERS = {'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'}
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
 
 STICKERS = {'lincoln'   : 'BQADBAADGQADyIsGAAE2WnfSWOhfUgI',
             'dali'      : 'BQADBAADHAADyIsGAAFZfq1bphjqlgI',
@@ -157,7 +157,6 @@ class Core(CorePluginBase):
 
 
     def enable(self):
-
         try:
             log.info(prelog() + 'Enable')
             self.config = deluge.configmanager.ConfigManager('telegramer.conf', DEFAULT_PREFS)
@@ -174,6 +173,7 @@ class Core(CorePluginBase):
                             'paused'       : self.cmd_paused,
                             'queued'       : self.cmd_paused,
                             '?'            : self.cmd_help,
+                            'cancel'       : self.cancel,
                             'help'         : self.cmd_help,
                             'start'        : self.cmd_help,
                             'reload'       : self.restart_telegramer,
@@ -220,6 +220,17 @@ class Core(CorePluginBase):
 
                 # Log all errors
                 dp.add_error_handler(self.error)
+                ###################################################################################
+                """
+                log.error(prelog() + 'Start thread for polling')
+                # Initialize polling thread
+                bot_thread = threading.Thread(target=self.telegram_poll_start, args=())
+                # Daemonize thread
+                bot_thread.daemon = True
+                # Start thread
+                bot_thread.start()
+                """
+                ###################################################################################
                 # Start the Bot
                 self.updater.start_polling(poll_interval=0.05)
 
@@ -261,9 +272,28 @@ class Core(CorePluginBase):
 
 
     def telegram_poll_start(self):
+        # Skip this - for testing only
+        pass
         """Like non_stop, this will run forever
         this way suspend/sleep won't kill the thread"""
-        pass
+        while True:
+            try:
+                if self.updater:
+                    log.debug(prelog() + 'Start polling')
+                    #self.bot.polling()
+                    self.updater.start_polling(poll_interval=0.05)
+                    log.debug(prelog() +"Reached D")
+                    #self.updater.idle()
+                    while True: # and bot running HTTPSConnectionPool
+                        sleep(10)
+                        log.debug(prelog() +"Reached C")
+            except Exception as e:
+                log.debug(prelog() +"Reached A")
+                if self.updater:
+                    self.updater.stop()
+                    log.debug(prelog() +"Reached B")
+                log.error(prelog() + str(e) + '\n' + traceback.format_exc() + ' - Sleeping...')
+                sleep(10)
 
 
     def telegram_poll_stop(self):
@@ -271,7 +301,9 @@ class Core(CorePluginBase):
             log.debug(prelog() + 'Stop polling')
             if self.updater:
                 self.updater.stop()
+                log.debug(prelog() +"Reached E")
         except Exception as e:
+            log.debug(prelog() +"Reached F")
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
 
@@ -280,7 +312,6 @@ class Core(CorePluginBase):
             log.info("User %s canceled the conversation." % str(update.message.chat.id))
             update.message.reply_text('Operation cancelled',
                                       reply_markup=ReplyKeyboardRemove())
-
             return ConversationHandler.END
 
 
@@ -291,6 +322,7 @@ class Core(CorePluginBase):
                     '/down - List downloading torrents',
                     '/up - List uploading torrents',
                     '/paused - List paused torrents',
+                    '/cancel - Cancels the current operation',
                     '/help - Show this help message']
             self.telegram_send('\n'.join(help_msg), to=update.message.chat.id, parse_mode='Markdown')
 
@@ -434,15 +466,18 @@ class Core(CorePluginBase):
                 torrent_type_selected = update.message.text
 
                 if torrent_type_selected == 'Magnet':
-                    update.message.reply_text(STRINGS['send_magnet'])
+                    update.message.reply_text(STRINGS['send_magnet'],
+                        reply_markup=ReplyKeyboardRemove())
                     return ADD_MAGNET
 
                 elif torrent_type_selected == '.torrent':
-                    update.message.reply_text(STRINGS['send_file'])
+                    update.message.reply_text(STRINGS['send_file'],
+                        reply_markup=ReplyKeyboardRemove())
                     return ADD_TORRENT
 
                 elif torrent_type_selected == 'URL':
-                    update.message.reply_text(STRINGS['send_url'])
+                    update.message.reply_text(STRINGS['send_url'],
+                        reply_markup=ReplyKeyboardRemove())
                     return ADD_URL
 
                 else:

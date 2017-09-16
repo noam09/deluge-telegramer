@@ -1,6 +1,7 @@
 import logging
 
 from telegram import Update
+## REMREM from future.utils import bytes_to_native_str
 try:
     from future.utils import bytes_to_native_str
 except:
@@ -133,6 +134,6 @@ class WebhookHandler(BaseHTTPServer.BaseHTTPRequestHandler, object):
         arguments (it's just like printf!).
 
         The client ip is prefixed to every message.
-        """
 
+        """
         self.logger.debug("%s - - %s" % (self.address_string(), format % args))

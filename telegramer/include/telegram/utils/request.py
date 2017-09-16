@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 #
-# Modified by Noam for Telegramer (Deluge) compatibility
-# https://github.com/noam09
-#
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2016
+# Copyright (C) 2015-2017
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,36 +16,32 @@
 #
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
-"""This module contains methods to make POST and GET requests"""
+"""This module contains methods to make POST and GET requests."""
+import os
+import socket
+import sys
+import logging
+import warnings
 
 try:
     import ujson as json
 except ImportError:
     import json
-import os
-import time
-import socket
-import logging
 
-import traceback
-from deluge.log import LOG as log
-
-#log.setLevel(logging.DEBUG)
+import certifi
 try:
-    import certifi
-except Exception as e:
-    log.error(str(e) + '\n' + traceback.format_exc())
-
-try:
-    import urllib3
-    from urllib3.connection import HTTPConnection
-except Exception as e:
-    log.error(str(e) + '\n' + traceback.format_exc())
-
+    import telegram.vendor.ptb_urllib3.urllib3 as urllib3
+    import telegram.vendor.ptb_urllib3.urllib3.contrib.appengine as appengine
+    from telegram.vendor.ptb_urllib3.urllib3.connection import HTTPConnection
+    from telegram.vendor.ptb_urllib3.urllib3.util.timeout import Timeout
+except ImportError:  # pragma: no cover
+    warnings.warn("python-telegram-bot wasn't properly installed. Please refer to README.rst on "
+                  "how to properly install.")
+    raise
 
 from telegram import (InputFile, TelegramError)
-from telegram.error import Unauthorized, InvalidToken, NetworkError, TimedOut, BadRequest, \
-    ChatMigrated, RetryAfter
+from telegram.error import (Unauthorized, NetworkError, TimedOut, BadRequest, ChatMigrated,
+                            RetryAfter, InvalidToken)
 
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
@@ -59,73 +52,86 @@ class Request(object):
     telegram servers.
 
     Args:
+        con_pool_size (int): Number of connections to keep in the connection pool.
         proxy_url (str): The URL to the proxy server. For example: `http://127.0.0.1:3128`.
         urllib3_proxy_kwargs (dict): Arbitrary arguments passed as-is to `urllib3.ProxyManager`.
             This value will be ignored if proxy_url is not set.
+        connect_timeout (int|float): The maximum amount of time (in seconds) to wait for a
+            connection attempt to a server to succeed. None will set an infinite timeout for
+            connection attempts. (default: 5.)
+        read_timeout (int|float): The maximum amount of time (in seconds) to wait between
+            consecutive read operations for a response from the server. None will set an infinite
+            timeout. This value is usually overridden by the various ``telegram.Bot`` methods.
+            (default: 5.)
 
     """
 
-    def __init__(self, con_pool_size=1, proxy_url=None, urllib3_proxy_kwargs=None):
-        try:
-            if urllib3_proxy_kwargs is None:
-                urllib3_proxy_kwargs = dict()
+    def __init__(self,
+                 con_pool_size=1,
+                 proxy_url=None,
+                 urllib3_proxy_kwargs=None,
+                 connect_timeout=5.,
+                 read_timeout=5.):
+        if urllib3_proxy_kwargs is None:
+            urllib3_proxy_kwargs = dict()
 
-            # This was performed on Windows only, but it shouldn't be a problem
-            # managing cacert.pem on Linux as well
-            #if os.name == 'nt':
-            try:
-                import urllib2
-                import tempfile
-                capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
-                # Check if tg-cacert.pem exists and if it's older than 7 days
-                if not os.path.exists(capath) or (os.path.exists(capath) \
-                        and (time.time() - os.path.getctime(capath)) // (24 * 3600) >= 7):
-                    CACERT_URL = "https://curl.haxx.se/ca/cacert.pem"
-                    request = urllib2.Request(CACERT_URL)
-                    file_contents = urllib2.urlopen(request).read()
-                    log.debug("## Telegramer downloaded "+os.path.realpath(capath))
-                    cafile = open(os.path.realpath(capath), 'wb')
-                    cafile.write(file_contents)
-                    cafile.close()
-            except:
-                try:
-                    capath = certifi.where()
-                except:
-                    capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
+        self._connect_timeout = connect_timeout
 
-            kwargs = dict(
-                maxsize=con_pool_size,
-                cert_reqs='CERT_REQUIRED',
-                ca_certs=capath,
-                #ca_certs=certifi.where(),
-                socket_options=HTTPConnection.default_socket_options + [
-                    (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
-                ])
+        sockopts = HTTPConnection.default_socket_options + [
+            (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)]
 
-            # Set a proxy according to the following order:
-            # * proxy defined in proxy_url (+ urllib3_proxy_kwargs)
-            # * proxy set in `HTTPS_PROXY` env. var.
-            # * proxy set in `https_proxy` env. var.
-            # * None (if no proxy is configured)
+        # TODO: Support other platforms like mac and windows.
+        if 'linux' in sys.platform:
+            sockopts.append((socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 120))
+            sockopts.append((socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 30))
+            sockopts.append((socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 8))
 
-            if not proxy_url:
-                proxy_url = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+        self._con_pool_size = con_pool_size
 
-            if not proxy_url:
-                mgr = urllib3.PoolManager(**kwargs)
+        kwargs = dict(
+            maxsize=con_pool_size,
+            cert_reqs='CERT_REQUIRED',
+            ca_certs=certifi.where(),
+            socket_options=sockopts,
+            timeout=urllib3.Timeout(
+                connect=self._connect_timeout, read=read_timeout, total=None))
+
+        # Set a proxy according to the following order:
+        # * proxy defined in proxy_url (+ urllib3_proxy_kwargs)
+        # * proxy set in `HTTPS_PROXY` env. var.
+        # * proxy set in `https_proxy` env. var.
+        # * None (if no proxy is configured)
+
+        if not proxy_url:
+            proxy_url = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+
+        if not proxy_url:
+            if appengine.is_appengine_sandbox():
+                # Use URLFetch service if running in App Engine
+                mgr = appengine.AppEngineManager()
             else:
-                kwargs.update(urllib3_proxy_kwargs)
+                mgr = urllib3.PoolManager(**kwargs)
+        else:
+            kwargs.update(urllib3_proxy_kwargs)
+            if proxy_url.startswith('socks'):
+                try:
+                    from telegram.vendor.ptb_urllib3.urllib3.contrib.socks import SOCKSProxyManager
+                except ImportError:
+                    raise RuntimeError('PySocks is missing')
+                mgr = SOCKSProxyManager(proxy_url, **kwargs)
+            else:
                 mgr = urllib3.proxy_from_url(proxy_url, **kwargs)
                 if mgr.proxy.auth:
                     # TODO: what about other auth types?
                     auth_hdrs = urllib3.make_headers(proxy_basic_auth=mgr.proxy.auth)
                     mgr.proxy_headers.update(auth_hdrs)
 
-            self._con_pool = mgr
+        self._con_pool = mgr
 
-        except Exception as e:
-            log.error(str(e) + '\n' + traceback.format_exc())
-
+    @property
+    def con_pool_size(self):
+        """The size of the connection pool used."""
+        return self._con_pool_size
 
     def stop(self):
         self._con_pool.clear()
@@ -173,18 +179,20 @@ class Request(object):
             TelegramError
 
         """
+        # Make sure to hint Telegram servers that we reuse connections by sending
+        # "Connection: keep-alive" in the HTTP headers.
+        if 'headers' not in kwargs:
+            kwargs['headers'] = {}
+        kwargs['headers']['connection'] = 'keep-alive'
+
         try:
             resp = self._con_pool.request(*args, **kwargs)
-        except Exception as e:
-            log.error(str(e) + '\n' + traceback.format_exc())
-        """
         except urllib3.exceptions.TimeoutError:
             raise TimedOut()
         except urllib3.exceptions.HTTPError as error:
             # HTTPError must come last as its the base urllib3 exception class
             # TODO: do something smart here; for now just raise NetworkError
             raise NetworkError('urllib3 HTTPError {0}'.format(error))
-        """
 
         if 200 <= resp.status <= 299:
             # 200-299 range are HTTP success statuses
@@ -193,46 +201,31 @@ class Request(object):
         try:
             message = self._parse(resp.data)
         except ValueError:
-            raise NetworkError('Unknown HTTPError {0}'.format(resp.status))
+            message = 'Unknown HTTPError'
 
         if resp.status in (401, 403):
-            raise Unauthorized()
+            raise Unauthorized(message)
         elif resp.status == 400:
-            raise BadRequest(repr(message))
+            raise BadRequest(message)
         elif resp.status == 404:
             raise InvalidToken()
+        elif resp.status == 413:
+            raise NetworkError('File too large. Check telegram api limits '
+                               'https://core.telegram.org/bots/api#senddocument')
+
         elif resp.status == 502:
             raise NetworkError('Bad Gateway')
         else:
             raise NetworkError('{0} ({1})'.format(message, resp.status))
 
-    def get(self, url):
+    def get(self, url, timeout=None):
         """Request an URL.
+
         Args:
-          url:
-            The web location we want to retrieve.
-
-        Returns:
-          A JSON object.
-
-        """
-        result = self._request_wrapper('GET', url)
-        return self._parse(result)
-
-    def post(self, url, data, timeout=None):
-        """Request an URL.
-        Args:
-          url:
-            The web location we want to retrieve.
-          data:
-            A dict of (str, unicode) key/value pairs.
-          timeout:
-            float. If this value is specified, use it as the definitive timeout (in
-            seconds) for urlopen() operations. [Optional]
-
-        Notes:
-          If neither `timeout` nor `data['timeout']` is specified. The underlying
-          defaults are used.
+            url (:obj:`str`): The web location we want to retrieve.
+            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
+                timeout from the server (instead of the one specified during creation of the
+                connection pool).
 
         Returns:
           A JSON object.
@@ -241,11 +234,33 @@ class Request(object):
         urlopen_kwargs = {}
 
         if timeout is not None:
-            urlopen_kwargs['timeout'] = timeout
+            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
+
+        result = self._request_wrapper('GET', url, **urlopen_kwargs)
+        return self._parse(result)
+
+    def post(self, url, data, timeout=None):
+        """Request an URL.
+        Args:
+            url (:obj:`str`): The web location we want to retrieve.
+            data (dict[str, str|int]): A dict of key/value pairs. Note: On py2.7 value is unicode.
+            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
+                timeout from the server (instead of the one specified during creation of the
+                connection pool).
+
+        Returns:
+          A JSON object.
+
+        """
+        urlopen_kwargs = {}
+
+        if timeout is not None:
+            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
 
         if InputFile.is_inputfile(data):
             data = InputFile(data)
-            result = self._request_wrapper('POST', url, body=data.to_form(), headers=data.headers)
+            result = self._request_wrapper(
+                'POST', url, body=data.to_form(), headers=data.headers, **urlopen_kwargs)
         else:
             data = json.dumps(data)
             result = self._request_wrapper(
@@ -257,16 +272,34 @@ class Request(object):
 
         return self._parse(result)
 
-    def download(self, url, filename):
+    def retrieve(self, url, timeout=None):
+        """Retrieve the contents of a file by its URL.
+
+        Args:
+            url (:obj:`str`): The web location we want to retrieve.
+            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
+                timeout from the server (instead of the one specified during creation of the
+                connection pool).
+
+        """
+        urlopen_kwargs = {}
+        if timeout is not None:
+            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
+
+        return self._request_wrapper('GET', url, **urlopen_kwargs)
+
+    def download(self, url, filename, timeout=None):
         """Download a file by its URL.
         Args:
-          url:
-            The web location we want to retrieve.
+            url (str): The web location we want to retrieve.
+            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
+                timeout from the server (instead of the one specified during creation of the
+                connection pool).
 
           filename:
             The filename within the path to download the file.
 
         """
-        buf = self._request_wrapper('GET', url)
+        buf = self.retrieve(url, timeout=timeout)
         with open(filename, 'wb') as fobj:
             fobj.write(buf)

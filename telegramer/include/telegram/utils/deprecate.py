@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2016
+# Copyright (C) 2015-2017
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,13 +16,23 @@
 #
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
-"""This module facilitates the deprecation of functions"""
+"""This module facilitates the deprecation of functions."""
 
 import warnings
 
 
-def warn_deprecate_obj(old, new):
-    warnings.warn('{0} is being deprecated, please use {1} from now on'.format(old, new))
+# We use our own DeprecationWarning since they are muted by default and "UserWarning" makes it
+# seem like it's the user that issued the warning
+# We name it something else so that you don't get confused when you attempt to suppress it
+class TelegramDeprecationWarning(Warning):
+    pass
+
+
+def warn_deprecate_obj(old, new, stacklevel=3):
+    warnings.warn(
+        '{0} is being deprecated, please use {1} from now on.'.format(old, new),
+        category=TelegramDeprecationWarning,
+        stacklevel=stacklevel)
 
 
 def deprecate(func, old, new):

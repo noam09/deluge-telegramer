@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2016
+# Copyright (C) 2015-2017
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,35 +16,58 @@
 #
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
-""" This module contains the StringCommandHandler class """
+"""This module contains the StringCommandHandler class."""
+
+## REMREM from future.utils import string_types
+try:
+    from future.utils import string_types
+except:
+    pass
+
+try:
+    string_types
+except NameError:
+    string_types = str
 
 from .handler import Handler
-from telegram.utils.deprecate import deprecate
 
 
 class StringCommandHandler(Handler):
-    """
-    Handler class to handle string commands. Commands are string updates
-    that start with ``/``.
+    """Handler class to handle string commands. Commands are string updates that start with ``/``.
+
+    Note:
+        This handler is not used to handle Telegram :attr:`telegram.Update`, but strings manually
+        put in the queue. For example to send messages with the bot using command line or API.
+
+    Attributes:
+        command (:obj:`str`): The command this handler should listen for.
+        callback (:obj:`callable`): The callback function for this handler.
+        pass_args (:obj:`bool`): Optional. Determines whether the handler should be passed
+            ``args``.
+        pass_update_queue (:obj:`bool`): Optional. Determines whether ``update_queue`` will be
+            passed to the callback function.
+        pass_job_queue (:obj:`bool`): Optional. Determines whether ``job_queue`` will be passed to
+            the callback function.
+
 
     Args:
-        command (str): The name of the command this handler should listen for.
-        callback (function): A function that takes ``bot, update`` as
-            positional arguments. It will be called when the ``check_update``
-            has determined that an update should be processed by this handler.
-        pass_args (optional[bool]): If the handler should be passed the
-            arguments passed to the command as a keyword argument called `
-            ``args``. It will contain a list of strings, which is the text
-            following the command split on single or consecutive whitespace characters.
-            Default is ``False``
-        pass_update_queue (optional[bool]): If set to ``True``, a keyword argument called
+        command (:obj:`str`): The command this handler should listen for.
+        callback (:obj:`callable`): A function that takes ``bot, update`` as positional arguments.
+            It will be called when the :attr:`check_update` has determined that a command should be
+            processed by this handler.
+        pass_args (:obj:`bool`, optional): Determines whether the handler should be passed the
+            arguments passed to the command as a keyword argument called ``args``. It will contain
+            a list of strings, which is the text following the command split on single or
+            consecutive whitespace characters. Default is ``False``
+        pass_update_queue (:obj:`bool`, optional): If set to ``True``, a keyword argument called
             ``update_queue`` will be passed to the callback function. It will be the ``Queue``
-            instance used by the ``Updater`` and ``Dispatcher`` that contains new updates which can
-            be used to insert updates. Default is ``False``.
-        pass_job_queue (optional[bool]): If set to ``True``, a keyword argument called
-            ``job_queue`` will be passed to the callback function. It will be a ``JobQueue``
-            instance created by the ``Updater`` which can be used to schedule new jobs.
-            Default is ``False``.
+            instance used by the :class:`telegram.ext.Updater` and :class:`telegram.ext.Dispatcher`
+            that contains new updates which can be used to insert updates. Default is ``False``.
+        pass_job_queue (:obj:`bool`, optional): If set to ``True``, a keyword argument called
+            ``job_queue`` will be passed to the callback function. It will be a
+            class:`telegram.ext.JobQueue` instance created by the :class:`telegram.ext.Updater`
+            which can be used to schedule new jobs. Default is ``False``.
+
     """
 
     def __init__(self,
@@ -59,18 +82,31 @@ class StringCommandHandler(Handler):
         self.pass_args = pass_args
 
     def check_update(self, update):
-        return (isinstance(update, str) and update.startswith('/')
+        """Determines whether an update should be passed to this handlers :attr:`callback`.
+
+        Args:
+            update (:obj:`str`): An incomming command.
+
+        Returns:
+            :obj:`bool`
+
+        """
+
+        return (isinstance(update, string_types) and update.startswith('/')
                 and update[1:].split(' ')[0] == self.command)
 
     def handle_update(self, update, dispatcher):
+        """Send the update to the :attr:`callback`.
+
+        Args:
+            update (:obj:`str`): An incomming command.
+            dispatcher (:class:`telegram.ext.Dispatcher`): Dispatcher that originated the command.
+
+        """
+
         optional_args = self.collect_optional_args(dispatcher)
 
         if self.pass_args:
             optional_args['args'] = update.split()[1:]
 
         return self.callback(dispatcher.bot, update, **optional_args)
-
-    # old non-PEP8 Handler methods
-    m = "telegram.StringCommandHandler."
-    checkUpdate = deprecate(check_update, m + "checkUpdate", m + "check_update")
-    handleUpdate = deprecate(handle_update, m + "handleUpdate", m + "handle_update")
