@@ -28,7 +28,10 @@ try:
 except ImportError:
     import json
 
-import certifi
+try:
+    import certifi
+except Exception as e:
+    log.error(str(e) + '\n' + traceback.format_exc())
 try:
     import telegram.vendor.ptb_urllib3.urllib3 as urllib3
     import telegram.vendor.ptb_urllib3.urllib3.contrib.appengine as appengine
@@ -88,10 +91,35 @@ class Request(object):
 
         self._con_pool_size = con_pool_size
 
+
+        # This was performed on Windows only, but it shouldn't be a problem
+        # managing cacert.pem on Linux as well
+        #if os.name == 'nt':
+        try:
+            import urllib2
+            import tempfile
+            capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
+            # Check if tg-cacert.pem exists and if it's older than 7 days
+            if not os.path.exists(capath) or (os.path.exists(capath) \
+                    and (time.time() - os.path.getctime(capath)) // (24 * 3600) >= 7):
+                CACERT_URL = "https://curl.haxx.se/ca/cacert.pem"
+                request = urllib2.Request(CACERT_URL)
+                file_contents = urllib2.urlopen(request).read()
+                log.debug("## Telegramer downloaded "+os.path.realpath(capath))
+                cafile = open(os.path.realpath(capath), 'wb')
+                cafile.write(file_contents)
+                cafile.close()
+        except:
+            try:
+                capath = certifi.where()
+            except:
+                capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
+
+
         kwargs = dict(
             maxsize=con_pool_size,
             cert_reqs='CERT_REQUIRED',
-            ca_certs=certifi.where(),
+            ca_certs=capath, #certifi.where(),
             socket_options=sockopts,
             timeout=urllib3.Timeout(
                 connect=self._connect_timeout, read=read_timeout, total=None))
