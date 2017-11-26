@@ -83,6 +83,7 @@ CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL = range(6)
 DEFAULT_PREFS = {"telegram_token": "Contact @BotFather and create a new bot",
                 "telegram_user": "Contact @MyIDbot",
                 "telegram_users": "Contact @MyIDbot",
+                "telegram_users_notify": "Contact @MyIDbot",
                 "telegram_notify_finished": True,
                 "telegram_notify_added": True,
                 "dir1": "",
@@ -145,6 +146,13 @@ INFO_DICT = (('queue', lambda i,s: i!=-1 and str(i) or '#'),
 
 INFOS = [i[0] for i in INFO_DICT]
 
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 def format_torrent_info(torrent):
     status = torrent.get_status(INFOS)
     return ''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
@@ -163,6 +171,7 @@ class Core(CorePluginBase):
             log.info(prelog() + 'Enable')
             self.config = deluge.configmanager.ConfigManager('telegramer.conf', DEFAULT_PREFS)
             self.whitelist = []
+            self.notifylist = []
             self.set_dirs = {}
             self.label = None
             self.COMMANDS = { 'list'         : self.cmd_list,
@@ -187,12 +196,20 @@ class Core(CorePluginBase):
                 if self.config['telegram_user']:
                     telegram_user_list = None
                     self.whitelist.append(str(self.config['telegram_user']))
+                    self.notifylist.append(str(self.config['telegram_user']))
                     if self.config['telegram_users']:
                         telegram_user_list = filter(None,
                             [x.strip() for x in str(self.config['telegram_users']).split(',')])
                         # Merge with whitelist and remove duplicates - order will be lost
                         self.whitelist = list(set(self.whitelist + telegram_user_list))
-                        log.debug(prelog() + str(self.whitelist))
+                        log.debug(prelog() + 'Whitelist: ' + str(self.whitelist))
+                    if self.config['telegram_users_notify']:
+                        n = filter(None,
+                            [x.strip() for x in str(self.config['telegram_users_notify']).split(',')])
+                        telegram_user_list_notify = [a for a in n if is_int(a)]
+                        # Merge with notifylist and remove duplicates - order will be lost
+                        self.notifylist = list(set(self.notifylist + telegram_user_list_notify))
+                        log.debug(prelog() + 'Notify: ' + str(self.notifylist))
 
                 reactor.callLater(2, self.connect_events)
 
@@ -265,11 +282,19 @@ class Core(CorePluginBase):
                 log.debug(prelog() + 'Send message')
                 if not to:
                     to = self.config['telegram_user']
-                if parse_mode:
-                    return self.bot.send_message(to, message,
-                        parse_mode='Markdown')
                 else:
-                    return self.bot.send_message(to, message)
+                    log.debug(prelog() + 'send_message, to set')
+                    if not isinstance(to, (list,)):
+                        to = [to]
+                    log.debug(prelog() + "[to] " + str(to))
+                    for usr in to:
+                        log.debug(prelog() + "to: " + usr)
+                        if parse_mode:
+                            self.bot.send_message(usr, message,
+                                parse_mode='Markdown')
+                        else:
+                            self.bot.send_message(usr, message)
+                    return
             return
 
 
@@ -634,8 +659,8 @@ class Core(CorePluginBase):
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status({})
             message = _('Added Torrent *%(name)s*') % torrent_status
-            log.info(prelog() + 'Sending torrent added message')
-            return self.telegram_send(message, parse_mode='Markdown')
+            log.info(prelog() + 'Sending torrent added message to ' + str(self.notifylist))
+            return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
         except Exception as e:
             log.error(prelog() + 'Error in alert %s' % str(e))
 
@@ -648,8 +673,8 @@ class Core(CorePluginBase):
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status({})
             message = _('Finished Downloading *%(name)s*') % torrent_status
-            log.info(prelog() + 'Sending torrent finished message')
-            return self.telegram_send(message, parse_mode='Markdown')
+            log.info(prelog() + 'Sending torrent finished message to ' + str(self.notifylist))
+            return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
         except Exception, e:
             log.error(prelog() + 'Error in alert %s' % str(e) + '\n' + traceback.format_exc())
 

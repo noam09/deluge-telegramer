@@ -78,6 +78,13 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             autoWidth: true,
             value: 'IDs should be comma-separated'
         }));
+        this.opts.bind('telegram_users_notify', fieldset.add({
+            fieldLabel: _('Notify IDs'),
+            anchor:'100%',
+            name: 'telegram_users_notify',
+            autoWidth: true,
+            value: 'IDs should be comma-separated'
+        }));
         fieldset = this.add({
             xtype: 'fieldset',
             title: _('Notifications'),
@@ -199,6 +206,9 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             }
             if (!Ext.isEmpty(config['telegram_users'])) {
                 config['telegram_users'] = config['telegram_users'];
+            }
+            if (!Ext.isEmpty(config['telegram_users_notify'])) {
+                config['telegram_users_notify'] = config['telegram_users_notify'];
             }
             if (!Ext.isEmpty(config['telegram_notify_added'])) {
                 config['telegram_notify_added'] = config['telegram_notify_added'];

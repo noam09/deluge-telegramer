@@ -49,7 +49,7 @@ Now, test these settings by clicking the **`Test`** button. You should receive a
 **Commands:** Send your bot the `/help` command to see what commands are supported.
 * The `/list` command will allow you to see a list of all torrents, whereas the `/down` and `/up` commands will show you only those downloading or uploading.
 * The `/add` command allows you to add a torrent to Deluge, using either a magnet link, a torrent file URL, or an actual torrent file!
-* Contact [@BotFather](https://telegram.me/BotFather) again to give your bot a profile photo, change its name, or add quick-access commands to your bot using `/setcommands`.
+* Contact [@BotFather](https://telegram.me/BotFather) again to give your bot a profile photo, change its name, or add quick-access commands to your bot using `/setcommands`. Adding the `/help` command to your bot's quick-access list an easy way to receive clickable links to all other commands.
 
 **Categories:** You may also notice the Category fields in the Telegramer configuration panel. This is an optional feature which allows you to set pairs of Categories and matching Directories to which you would like to move torrent contents upon completion. For example, if you set `Category 1` to `Music` and `Directory 1` to `C:\Music` or `/home/user/Music`, your bot will prompt you to save in the `Music` category when you use the `/add` command to add a new torrent. Now the torrent you download will be moved to the appropriate directory when finished! Make sure the directories you set in the category configuration really exist, or else the categories won't show up as options when adding a new torrent.
 Alternatively, you may also enter a new or different directory to which you'd like to save files once they're finished downloading. Simply send your bot the directory path in quotes (e.g. `"/home/user/NewDirectory/"`).
@@ -127,8 +127,7 @@ Once the download is complete, you may choose to receive a Telegram notification
 
 ## Known Issues
 
-* Bot stops functioning following sleep/suspend
-* Bot stops receiving commands after a while ([#8](https://github.com/noam09/deluge-telegramer/issues/8))
+* Currently none, please post any issues you find on the [issue tracker](http://github.com/noam09/deluge-telegramer/issues),.
 
 ## License
 This is free software under the GPL v3 open source license. Feel free to do with it what you wish, but any modification must be open sourced. A copy of the license is included.
