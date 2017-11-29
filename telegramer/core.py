@@ -284,17 +284,16 @@ class Core(CorePluginBase):
                     to = self.config['telegram_user']
                 else:
                     log.debug(prelog() + 'send_message, to set')
-                    if not isinstance(to, (list,)):
-                        to = [to]
-                    log.debug(prelog() + "[to] " + str(to))
-                    for usr in to:
-                        log.debug(prelog() + "to: " + usr)
-                        if parse_mode:
-                            self.bot.send_message(usr, message,
-                                parse_mode='Markdown')
-                        else:
-                            self.bot.send_message(usr, message)
-                    return
+                if not isinstance(to, (list,)):
+                    to = [to]
+                log.debug(prelog() + "[to] " + str(to))
+                for usr in to:
+                    log.debug(prelog() + "to: " + usr)
+                    if parse_mode:
+                        self.bot.send_message(usr, message,
+                            parse_mode='Markdown')
+                    else:
+                        self.bot.send_message(usr, message)
             return
 
 
