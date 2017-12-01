@@ -277,7 +277,7 @@ class Core(CorePluginBase):
 
 
     def telegram_send(self, message, to=None, parse_mode=None):
-        if 1:#str(update.message.chat.id) in self.whitelist:
+        if 1: #str(update.message.chat.id) in self.whitelist:
             if self.bot:
                 log.debug(prelog() + 'Send message')
                 if not to:
@@ -285,15 +285,19 @@ class Core(CorePluginBase):
                 else:
                     log.debug(prelog() + 'send_message, to set')
                 if not isinstance(to, (list,)):
+                    log.debug(prelog() + 'Convert to to list')
                     to = [to]
                 log.debug(prelog() + "[to] " + str(to))
                 for usr in to:
-                    log.debug(prelog() + "to: " + usr)
-                    if parse_mode:
-                        self.bot.send_message(usr, message,
-                            parse_mode='Markdown')
-                    else:
-                        self.bot.send_message(usr, message)
+                    # Every outgoing message filtered here
+                    if str(usr) in self.whitelist or str(usr) in self.notifylist:
+                        log.debug(prelog() + "to: " + str(usr))
+                        if parse_mode:
+                            msg = self.bot.send_message(usr, message,
+                                parse_mode='Markdown')
+                        else:
+                            msg = self.bot.send_message(usr, message)
+            log.debug(prelog() + 'return')
             return
 
 
@@ -342,7 +346,9 @@ class Core(CorePluginBase):
 
 
     def cmd_help(self, bot, update):
+        log.debug(prelog() + "Entered cmd_help")
         if str(update.message.chat.id) in self.whitelist:
+            log.debug(prelog() + str(update.message.chat.id) + " in whitelist")
             help_msg = ['/add - Add a new torrent',
                     '/list - List all torrents',
                     '/down - List downloading torrents',
@@ -350,31 +356,32 @@ class Core(CorePluginBase):
                     '/paused - List paused torrents',
                     '/cancel - Cancels the current operation',
                     '/help - Show this help message']
-            self.telegram_send('\n'.join(help_msg), to=update.message.chat.id, parse_mode='Markdown')
+            log.debug(prelog() + "telegram_send to " + str([update.message.chat.id]))
+            self.telegram_send('\n'.join(help_msg), to=[update.message.chat.id], parse_mode='Markdown')
 
 
     def cmd_list(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             #log.error(self.list_torrents())
-            self.telegram_send(self.list_torrents(), to=update.message.chat.id, parse_mode='Markdown')
+            self.telegram_send(self.list_torrents(), to=[update.message.chat.id], parse_mode='Markdown')
 
 
     def cmd_down(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Downloading'),
-                to=update.message.chat.id, parse_mode='Markdown')
+                to=[update.message.chat.id], parse_mode='Markdown')
 
 
     def cmd_up(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Seeding'),
-                to=update.message.chat.id, parse_mode='Markdown')
+                to=[update.message.chat.id], parse_mode='Markdown')
 
 
     def cmd_paused(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state']  in ('Paused', 'Queued')),
-                to=update.message.chat.id, parse_mode='Markdown')
+                to=[update.message.chat.id], parse_mode='Markdown')
 
 
     def add(self, bot, update):
