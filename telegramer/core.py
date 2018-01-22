@@ -363,7 +363,9 @@ class Core(CorePluginBase):
     def cmd_list(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             #log.error(self.list_torrents())
-            self.telegram_send(self.list_torrents(), to=[update.message.chat.id], parse_mode='Markdown')
+            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] in
+                ("Active", "Downloading", "Seeding", "Paused", "Checking", "Error", "Queued")),
+                to=[update.message.chat.id], parse_mode='Markdown')
 
 
     def cmd_down(self, bot, update):
@@ -380,7 +382,7 @@ class Core(CorePluginBase):
 
     def cmd_paused(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
-            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state']  in ('Paused', 'Queued')),
+            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] in ('Paused', 'Queued')),
                 to=[update.message.chat.id], parse_mode='Markdown')
 
 
