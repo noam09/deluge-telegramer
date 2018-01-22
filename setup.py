@@ -7,7 +7,7 @@
 # Package inclusion method thanks to YaRSS2 developers
 # Copyright (C) 2012-2015 bendikro bro.devel+yarss2@gmail.com
 # Copyright (C) 2009 Camillo Dell'mour <cdellmour@gmail.com>
-# 
+#
 # Basic plugin template created by:
 # Copyright (C) 2008 Martijn Voncken <mvoncken@gmail.com>
 # Copyright (C) 2007-2009 Andrew Resch <andrewresch@gmail.com>
@@ -46,7 +46,7 @@ from setuptools import setup, find_packages
 __plugin_name__ = "Telegramer"
 __author__ = "Noam"
 __author_email__ = "noamgit@gmail.com"
-__version__ = "1.1.7.2"
+__version__ = "1.1.7.3"
 __url__ = "https://github.com/noam09"
 __license__ = "GPLv3"
 __description__ = "Control Deluge using Telegram"
@@ -67,7 +67,7 @@ setup(
     license=__license__,
     long_description=__long_description__ if __long_description__ else __description__,
     packages=packages,
-    package_data = __pkg_data__,
+    package_data=__pkg_data__,
     entry_points="""
     [deluge.plugin.core]
     %s = %s:CorePlugin

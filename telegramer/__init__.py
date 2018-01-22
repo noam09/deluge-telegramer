@@ -47,6 +47,7 @@ from deluge.log import LOG as log
 import pkg_resources
 from deluge.plugins.init import PluginInitBase
 
+
 def load_libs():
     egg = pkg_resources.require("Telegramer")[0]
     for name in egg.get_entry_map("telegramer.libpaths"):
@@ -55,6 +56,7 @@ def load_libs():
         sys.path.append(location)
         log.error("Appending to sys.path: '%s'" % location)
 
+
 class CorePlugin(PluginInitBase):
     def __init__(self, plugin_name):
         load_libs()
@@ -62,12 +64,14 @@ class CorePlugin(PluginInitBase):
         self._plugin_cls = _plugin_cls
         super(CorePlugin, self).__init__(plugin_name)
 
+
 class GtkUIPlugin(PluginInitBase):
     def __init__(self, plugin_name):
         load_libs()
         from gtkui import GtkUI as _plugin_cls
         self._plugin_cls = _plugin_cls
         super(GtkUIPlugin, self).__init__(plugin_name)
+
 
 class WebUIPlugin(PluginInitBase):
     def __init__(self, plugin_name):

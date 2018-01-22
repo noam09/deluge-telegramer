@@ -53,13 +53,14 @@ try:
 except ImportError as e:
     log.error('Telegramer: Import error - %s', str(e))
 
+
 class GtkUI(GtkPluginBase):
     def enable(self):
         self.glade = gtk.glade.XML(get_resource("config.glade"))
         self.glade.signal_autoconnect({
-            "on_button_test_clicked":self.on_button_test_clicked,
-            "on_button_save_clicked":self.on_button_save_clicked,
-            "on_button_reload_clicked":self.on_button_reload_clicked
+            "on_button_test_clicked": self.on_button_test_clicked,
+            "on_button_save_clicked": self.on_button_save_clicked,
+            "on_button_reload_clicked": self.on_button_reload_clicked
         })
         component.get("Preferences").add_page("Telegramer", self.glade.get_widget("prefs_box"))
         component.get("PluginManager").register_hook("on_apply_prefs", self.on_apply_prefs)
@@ -73,18 +74,18 @@ class GtkUI(GtkPluginBase):
     def on_apply_prefs(self):
         log.debug("Telegramer: applying prefs for Telegramer")
         config = {
-            "telegram_notify_added":self.glade.get_widget("telegram_notify_added").get_active(),
-            "telegram_notify_finished":self.glade.get_widget("telegram_notify_finished").get_active(),
-            "telegram_token":self.glade.get_widget("telegram_token").get_text(),
-            "telegram_user":self.glade.get_widget("telegram_user").get_text(),
-            "telegram_users":self.glade.get_widget("telegram_users").get_text(),
-            "telegram_users_notify":self.glade.get_widget("telegram_users_notify").get_text(),
-            "cat1":self.glade.get_widget("cat1").get_text(),
-            "dir1":self.glade.get_widget("dir1").get_text(),
-            "cat2":self.glade.get_widget("cat2").get_text(),
-            "dir2":self.glade.get_widget("dir2").get_text(),
-            "cat3":self.glade.get_widget("cat3").get_text(),
-            "dir3":self.glade.get_widget("dir3").get_text()
+            "telegram_notify_added": self.glade.get_widget("telegram_notify_added").get_active(),
+            "telegram_notify_finished": self.glade.get_widget("telegram_notify_finished").get_active(),
+            "telegram_token": self.glade.get_widget("telegram_token").get_text(),
+            "telegram_user": self.glade.get_widget("telegram_user").get_text(),
+            "telegram_users": self.glade.get_widget("telegram_users").get_text(),
+            "telegram_users_notify": self.glade.get_widget("telegram_users_notify").get_text(),
+            "cat1": self.glade.get_widget("cat1").get_text(),
+            "dir1": self.glade.get_widget("dir1").get_text(),
+            "cat2": self.glade.get_widget("cat2").get_text(),
+            "dir2": self.glade.get_widget("dir2").get_text(),
+            "cat3": self.glade.get_widget("cat3").get_text(),
+            "dir3": self.glade.get_widget("dir3").get_text()
         }
         client.telegramer.set_config(config)
 
