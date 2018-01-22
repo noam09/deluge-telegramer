@@ -52,6 +52,7 @@ from deluge.log import LOG as log
 # log.setLevel(logging.DEBUG)
 #############################
 
+
 def prelog():
     return strftime('%Y-%m-%d %H:%M:%S # Telegramer: ')
 
@@ -59,8 +60,8 @@ try:
     import re
     import urllib2
     from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot)
-    from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, RegexHandler,
-                              ConversationHandler)
+    from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
+                              RegexHandler, ConversationHandler)
     import threading
     from base64 import b64encode
     from time import strftime, sleep
@@ -80,71 +81,76 @@ except ImportError as e:
 
 CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL = range(6)
 
-DEFAULT_PREFS = {"telegram_token": "Contact @BotFather and create a new bot",
-                "telegram_user": "Contact @MyIDbot",
-                "telegram_users": "Contact @MyIDbot",
-                "telegram_users_notify": "Contact @MyIDbot",
-                "telegram_notify_finished": True,
-                "telegram_notify_added": True,
-                "dir1": "",
-                "cat1": "",
-                "dir2": "",
-                "cat2": "",
-                "dir3": "",
-                "cat3": ""}
+DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a new bot",
+                 "telegram_user":            "Contact @MyIDbot",
+                 "telegram_users":           "Contact @MyIDbot",
+                 "telegram_users_notify":    "Contact @MyIDbot",
+                 "telegram_notify_finished": True,
+                 "telegram_notify_added":    True,
+                 "dir1":                     "",
+                 "cat1":                     "",
+                 "dir2":                     "",
+                 "cat2":                     "",
+                 "dir3":                     "",
+                 "cat3":                     ""}
 
-HEADERS = {'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+           '(KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
 
-STICKERS = {'lincoln'   : 'BQADBAADGQADyIsGAAE2WnfSWOhfUgI',
-            'dali'      : 'BQADBAADHAADyIsGAAFZfq1bphjqlgI',
-            'chan'      : 'BQADBAADPQADyIsGAAHaVWyyLugSFAI',
-            'marley'    : 'BQADBAADJQADyIsGAAGdzbYn4WkdaAI',
-            'snow'      : 'CAADAgADZQUAAgi3GQJyjRNCuIA54gI',
-            'borat'     : 'CAADBAADmwQAAjJQbQAB5DpM4iETWoQC'}
+STICKERS = {'lincoln':  'BQADBAADGQADyIsGAAE2WnfSWOhfUgI',
+            'dali':     'BQADBAADHAADyIsGAAFZfq1bphjqlgI',
+            'chan':     'BQADBAADPQADyIsGAAHaVWyyLugSFAI',
+            'marley':   'BQADBAADJQADyIsGAAGdzbYn4WkdaAI',
+            'snow':     'CAADAgADZQUAAgi3GQJyjRNCuIA54gI',
+            'borat':    'CAADBAADmwQAAjJQbQAB5DpM4iETWoQC'}
 
-EMOJI = {'seeding'      : u'\u23eb',
-        'queued'        : u'\u23ef',
-        'paused'        : u'\u23f8',
-        'error'         : u'\u2757\ufe0f',
-        'downloading'   : u'\u23ec'}
+EMOJI = {'seeding':     u'\u23eb',
+         'queued':      u'\u23ef',
+         'paused':      u'\u23f8',
+         'error':       u'\u2757\ufe0f',
+         'downloading': u'\u23ec'}
 
 STRINGS = {'no_label': 'No Label',
-            'no_category': 'Use Default Settings',
-            'cancel': 'Send /cancel at any time to abort',
-            'test_success': 'It works!',
-            'which_cat': 'Which category/directory?\nRemember to quote directory paths ("/path/to/dir")',
-            'which_label': 'Which label?',
-            'what_kind': 'What kind?',
-            'send_magnet': 'Please send me the magnet link',
-            'send_file': 'Please send me the torrent file',
-            'send_url': 'Please send me the address',
-            'added': 'Added',
-            'eta': 'ETA',
-            'error': 'Error',
-            'not_magnet': 'Aw man... That\'s not a magnet link',
-            'not_file': 'Aw man... That\'s not a torrent file',
-            'not_url': 'Aw man... Bad link',
-            'download_fail': 'Aw man... Download failed',
-            'no_items': 'No items'}
+           'no_category': 'Use Default Settings',
+           'cancel': 'Send /cancel at any time to abort',
+           'test_success': 'It works!',
+           'which_cat': 'Which category/directory?\nRemember to quote ' +
+                        'directory paths ("/path/to/dir")',
+           'which_label': 'Which label?',
+           'what_kind': 'What kind?',
+           'send_magnet': 'Please send me the magnet link',
+           'send_file': 'Please send me the torrent file',
+           'send_url': 'Please send me the address',
+           'added': 'Added',
+           'eta': 'ETA',
+           'error': 'Error',
+           'not_magnet': 'Aw man... That\'s not a magnet link',
+           'not_file': 'Aw man... That\'s not a torrent file',
+           'not_url': 'Aw man... Bad link',
+           'download_fail': 'Aw man... Download failed',
+           'no_items': 'No items'}
 
-INFO_DICT = (('queue', lambda i,s: i!=-1 and str(i) or '#'),
+INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
-             ('name', lambda i,s: ' %s *%s* ' % (s['state'] if s['state'].lower() not in EMOJI else EMOJI[s['state'].lower()], i)),
-             ('total_wanted', lambda i,s: '(%s) ' % fsize(i)),
-             ('progress', lambda i,s: '%s\n' % fpcnt(i/100)),
+             ('name', lambda i, s: ' %s *%s* ' %
+              (s['state'] if s['state'].lower() not in EMOJI
+               else EMOJI[s['state'].lower()], i)),
+             ('total_wanted', lambda i, s: '(%s) ' % fsize(i)),
+             ('progress', lambda i, s: '%s\n' % fpcnt(i/100)),
              ('num_seeds', None),
              ('num_peers', None),
              ('total_seeds', None),
-             ('total_peers', lambda i,s: '%s / %s seeds\n' % tuple(map(fpeer,
-                                                                   (s['num_seeds'], s['num_peers']),
-                                                                   (s['total_seeds'], s['total_peers'])))),
+             ('total_peers', lambda i, s: '%s / %s seeds\n' %
+              tuple(map(fpeer, (s['num_seeds'], s['num_peers']),
+                               (s['total_seeds'], s['total_peers'])))),
              ('download_payload_rate', None),
-             ('upload_payload_rate', lambda i,s: '%s : %s\n' % tuple(map(fspeed, (s['download_payload_rate'], i)))),
-             ('eta', lambda i,s: i > 0 and '*ETA:* %s ' % ftime(i) or ''),
-             ('time_added', lambda i,s: '*Added:* %s' % fdate(i)))
+             ('upload_payload_rate', lambda i, s: '%s : %s\n' %
+              tuple(map(fspeed, (s['download_payload_rate'], i)))),
+             ('eta', lambda i, s: i > 0 and '*ETA:* %s ' % ftime(i) or ''),
+             ('time_added', lambda i, s: '*Added:* %s' % fdate(i)))
 
 INFOS = [i[0] for i in INFO_DICT]
+
 
 def is_int(s):
     try:
@@ -153,9 +159,11 @@ def is_int(s):
     except ValueError:
         return False
 
+
 def format_torrent_info(torrent):
     status = torrent.get_status(INFOS)
     return ''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
+
 
 class Core(CorePluginBase):
     def __init__(self, *args):
@@ -165,30 +173,30 @@ class Core(CorePluginBase):
         log.debug(prelog() + 'Initialize class')
         super(Core, self).__init__(*args)
 
-
     def enable(self):
         try:
             log.info(prelog() + 'Enable')
-            self.config = deluge.configmanager.ConfigManager('telegramer.conf', DEFAULT_PREFS)
+            self.config = deluge.configmanager.ConfigManager('telegramer.conf',
+                                                             DEFAULT_PREFS)
             self.whitelist = []
             self.notifylist = []
             self.set_dirs = {}
             self.label = None
-            self.COMMANDS = { 'list'         : self.cmd_list,
-                            'down'         : self.cmd_down,
-                            'downloading'  : self.cmd_down,
-                            'up'           : self.cmd_up,
-                            'uploading'    : self.cmd_up,
-                            'seed'         : self.cmd_up,
-                            'seeding'      : self.cmd_up,
-                            'paused'       : self.cmd_paused,
-                            'queued'       : self.cmd_paused,
-                            '?'            : self.cmd_help,
-                            'cancel'       : self.cancel,
-                            'help'         : self.cmd_help,
-                            'start'        : self.cmd_help,
-                            'reload'       : self.restart_telegramer,
-                            'commands'     : self.cmd_help}
+            self.COMMANDS = {'list':        self.cmd_list,
+                             'down':        self.cmd_down,
+                             'downloading': self.cmd_down,
+                             'up':          self.cmd_up,
+                             'uploading':   self.cmd_up,
+                             'seed':        self.cmd_up,
+                             'seeding':     self.cmd_up,
+                             'paused':      self.cmd_paused,
+                             'queued':      self.cmd_paused,
+                             '?':           self.cmd_help,
+                             'cancel':      self.cancel,
+                             'help':        self.cmd_help,
+                             'start':       self.cmd_help,
+                             'reload':      self.restart_telegramer,
+                             'commands':    self.cmd_help}
 
             log.debug(prelog() + 'Initialize bot')
 
@@ -198,17 +206,18 @@ class Core(CorePluginBase):
                     self.whitelist.append(str(self.config['telegram_user']))
                     self.notifylist.append(str(self.config['telegram_user']))
                     if self.config['telegram_users']:
-                        telegram_user_list = filter(None,
-                            [x.strip() for x in str(self.config['telegram_users']).split(',')])
+                        telegram_user_list = filter(None, [x.strip() for x in
+                                                    str(self.config['telegram_users']).split(',')])
                         # Merge with whitelist and remove duplicates - order will be lost
                         self.whitelist = list(set(self.whitelist + telegram_user_list))
                         log.debug(prelog() + 'Whitelist: ' + str(self.whitelist))
                     if self.config['telegram_users_notify']:
-                        n = filter(None,
-                            [x.strip() for x in str(self.config['telegram_users_notify']).split(',')])
+                        n = filter(None, [x.strip() for x in
+                                   str(self.config['telegram_users_notify']).split(',')])
                         telegram_user_list_notify = [a for a in n if is_int(a)]
                         # Merge with notifylist and remove duplicates - order will be lost
-                        self.notifylist = list(set(self.notifylist + telegram_user_list_notify))
+                        self.notifylist = list(set(self.notifylist +
+                                                   telegram_user_list_notify))
                         log.debug(prelog() + 'Notify: ' + str(self.notifylist))
 
                 reactor.callLater(2, self.connect_events)
@@ -239,7 +248,7 @@ class Core(CorePluginBase):
 
                 # Log all errors
                 dp.add_error_handler(self.error)
-                ###################################################################################
+                #######################################################################
                 """
                 log.error(prelog() + 'Start thread for polling')
                 # Initialize polling thread
@@ -249,17 +258,15 @@ class Core(CorePluginBase):
                 # Start thread
                 bot_thread.start()
                 """
-                ###################################################################################
+                #######################################################################
                 # Start the Bot
                 self.updater.start_polling(poll_interval=0.05)
 
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-
     def error(self, bot, update, error):
         logger.warn('Update "%s" caused error "%s"' % (update, error))
-
 
     def disable(self):
         try:
@@ -267,17 +274,15 @@ class Core(CorePluginBase):
             reactor.callLater(2, self.disconnect_events)
             self.whitelist = []
             self.telegram_poll_stop()
-            #self.bot = None
+            # self.bot = None
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
 
     def update(self):
         pass
 
-
     def telegram_send(self, message, to=None, parse_mode=None):
-        if 1: #str(update.message.chat.id) in self.whitelist:
+        if 1:  # str(update.message.chat.id) in self.whitelist:
             if self.bot:
                 log.debug(prelog() + 'Send message')
                 if not to:
@@ -294,12 +299,11 @@ class Core(CorePluginBase):
                         log.debug(prelog() + "to: " + str(usr))
                         if parse_mode:
                             msg = self.bot.send_message(usr, message,
-                                parse_mode='Markdown')
+                                                        parse_mode='Markdown')
                         else:
                             msg = self.bot.send_message(usr, message)
             log.debug(prelog() + 'return')
             return
-
 
     def telegram_poll_start(self):
         # Skip this - for testing only
@@ -310,84 +314,85 @@ class Core(CorePluginBase):
             try:
                 if self.updater:
                     log.debug(prelog() + 'Start polling')
-                    #self.bot.polling()
+                    # self.bot.polling()
                     self.updater.start_polling(poll_interval=0.05)
-                    log.debug(prelog() +"Reached D")
-                    #self.updater.idle()
-                    while True: # and bot running HTTPSConnectionPool
+                    # self.updater.idle()
+                    while True:     # and bot running HTTPSConnectionPool
                         sleep(10)
-                        log.debug(prelog() +"Reached C")
             except Exception as e:
-                log.debug(prelog() +"Reached A")
                 if self.updater:
                     self.updater.stop()
-                    log.debug(prelog() +"Reached B")
-                log.error(prelog() + str(e) + '\n' + traceback.format_exc() + ' - Sleeping...')
+                log.error(prelog() + str(e) + '\n' +
+                          traceback.format_exc() + ' - Sleeping...')
                 sleep(10)
-
 
     def telegram_poll_stop(self):
         try:
             log.debug(prelog() + 'Stop polling')
             if self.updater:
                 self.updater.stop()
-                log.debug(prelog() +"Reached E")
         except Exception as e:
-            log.debug(prelog() +"Reached F")
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
 
     def cancel(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
-            log.info("User %s canceled the conversation." % str(update.message.chat.id))
+            log.info("User %s canceled the conversation."
+                     % str(update.message.chat.id))
             update.message.reply_text('Operation cancelled',
                                       reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-
 
     def cmd_help(self, bot, update):
         log.debug(prelog() + "Entered cmd_help")
         if str(update.message.chat.id) in self.whitelist:
             log.debug(prelog() + str(update.message.chat.id) + " in whitelist")
             help_msg = ['/add - Add a new torrent',
-                    '/list - List all torrents',
-                    '/down - List downloading torrents',
-                    '/up - List uploading torrents',
-                    '/paused - List paused torrents',
-                    '/cancel - Cancels the current operation',
-                    '/help - Show this help message']
-            log.debug(prelog() + "telegram_send to " + str([update.message.chat.id]))
-            self.telegram_send('\n'.join(help_msg), to=[update.message.chat.id], parse_mode='Markdown')
-
+                        '/list - List all torrents',
+                        '/down - List downloading torrents',
+                        '/up - List uploading torrents',
+                        '/paused - List paused torrents',
+                        '/cancel - Cancels the current operation',
+                        '/help - Show this help message']
+            log.debug(prelog() + "telegram_send to " +
+                      str([update.message.chat.id]))
+            self.telegram_send('\n'.join(help_msg),
+                               to=[update.message.chat.id],
+                               parse_mode='Markdown')
 
     def cmd_list(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
-            #log.error(self.list_torrents())
-            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] in
-                ("Active", "Downloading", "Seeding", "Paused", "Checking", "Error", "Queued")),
-                to=[update.message.chat.id], parse_mode='Markdown')
-
+            # log.error(self.list_torrents())
+            self.telegram_send(self.list_torrents(lambda t:
+                               t.get_status(('state',))['state'] in
+                               ('Active', 'Downloading', 'Seeding',
+                                'Paused', 'Checking', 'Error', 'Queued')),
+                               to=[update.message.chat.id],
+                               parse_mode='Markdown')
 
     def cmd_down(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
-            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Downloading'),
-                to=[update.message.chat.id], parse_mode='Markdown')
-
+            self.telegram_send(self.list_torrents(lambda t:
+                               t.get_status(('state',))['state'] == 'Downloading'),
+                               to=[update.message.chat.id],
+                               parse_mode='Markdown')
 
     def cmd_up(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
-            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] == 'Seeding'),
-                to=[update.message.chat.id], parse_mode='Markdown')
-
+            self.telegram_send(self.list_torrents(lambda t:
+                               t.get_status(('state',))['state'] == 'Seeding'),
+                               to=[update.message.chat.id],
+                               parse_mode='Markdown')
 
     def cmd_paused(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
-            self.telegram_send(self.list_torrents(lambda t: t.get_status(('state',))['state'] in ('Paused', 'Queued')),
-                to=[update.message.chat.id], parse_mode='Markdown')
-
+            self.telegram_send(self.list_torrents(lambda t:
+                               t.get_status(('state',))['state'] in
+                               ('Paused', 'Queued')),
+                               to=[update.message.chat.id],
+                               parse_mode='Markdown')
 
     def add(self, bot, update):
-        #log.error(type(update.message.chat.id) + str(update.message.chat.id))
+        # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
             try:
                 self.set_dirs = {}
@@ -399,8 +404,10 @@ class Core(CorePluginBase):
                 for i in range(3):
                     i = i+1
                     if os.path.isdir(self.config['dir'+str(i)]):
-                        log.debug(prelog() + self.config['cat'+str(i)] + ' ' + self.config['dir'+str(i)])
-                        self.set_dirs[self.config['cat'+str(i)]] = self.config['dir'+str(i)]
+                        log.debug(prelog() + self.config['cat'+str(i)] +
+                                  ' ' + self.config['dir'+str(i)])
+                        self.set_dirs[self.config['cat'+str(i)]] = \
+                            self.config['dir'+str(i)]
 
                 if self.set_dirs:
                     for k in self.set_dirs.keys():
@@ -410,18 +417,19 @@ class Core(CorePluginBase):
 
                 update.message.reply_text(
                     '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                     one_time_keyboard=True))
 
                 return CATEGORY
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-
     def category(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             try:
-                if update.message.text == '/add' or update.message.text == STRINGS['no_category']:
+                if update.message.text == '/add' or \
+                   update.message.text == STRINGS['no_category']:
                     self.opts = {}
                 else:
                     for i in range(3):
@@ -429,22 +437,29 @@ class Core(CorePluginBase):
                         if self.config['cat'+str(i)] == update.message.text:
                             cat_id = str(i)
                             # move_completed_path vs download_location
-                            self.opts = {'move_completed_path': self.config['dir'+cat_id],
-                                'move_completed': True}
-                    # If none of the existing categories were selected, maybe user is trying to
-                    # save to a new directory
+                            self.opts = {'move_completed_path':
+                                         self.config['dir'+cat_id],
+                                         'move_completed': True}
+                    # If none of the existing categories were selected,
+                    # maybe user is trying to save to a new directory
                     if not self.opts:
                         try:
-                            log.debug(prelog() + 'Custom directory entered: ' + str(update.message.text))
-                            if update.message.text[0] == '"' and update.message.text[-1] == '"':
-                                otherpath = os.path.abspath(os.path.realpath(update.message.text[1:-1]))
-                                log.debug(prelog() + 'Attempting to create and save to: ' + str(otherpath))
+                            log.debug(prelog() + 'Custom directory entered: ' +
+                                      str(update.message.text))
+                            if update.message.text[0] == '"' and \
+                               update.message.text[-1] == '"':
+                                otherpath = os.path.abspath(os.path.realpath(
+                                    update.message.text[1:-1]))
+                                log.debug(prelog() +
+                                          'Attempt to create and save to: ' +
+                                          str(otherpath))
                                 if not os.path.exists(otherpath):
                                     os.makedirs(otherpath)
                                 self.opts = {'move_completed_path': otherpath,
-                                    'move_completed': True}
+                                             'move_completed': True}
                         except Exception as e:
-                            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+                            log.error(prelog() + str(e) + '\n' +
+                                      traceback.format_exc())
 
                 keyboard_options = []
                 self.label = None
@@ -457,18 +472,19 @@ class Core(CorePluginBase):
                             keyboard_options.append([g])
                 except Exception as e:
                     log.debug(prelog() + 'Enabling Label plugin failed')
-                    log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+                    log.error(prelog() + str(e) + '\n' +
+                              traceback.format_exc())
                 keyboard_options.append([STRINGS['no_label']])
 
                 update.message.reply_text(
                     STRINGS['which_label'],
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                     one_time_keyboard=True))
 
                 return SET_LABEL
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
 
     def set_label(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
@@ -486,13 +502,11 @@ class Core(CorePluginBase):
 
                 update.message.reply_text(
                     STRINGS['what_kind'],
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
-
+                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                     one_time_keyboard=True))
                 return TORRENT_TYPE
-
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
 
     def torrent_type(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
@@ -502,27 +516,26 @@ class Core(CorePluginBase):
 
                 if torrent_type_selected == 'Magnet':
                     update.message.reply_text(STRINGS['send_magnet'],
-                        reply_markup=ReplyKeyboardRemove())
+                                              reply_markup=ReplyKeyboardRemove())
                     return ADD_MAGNET
 
                 elif torrent_type_selected == '.torrent':
                     update.message.reply_text(STRINGS['send_file'],
-                        reply_markup=ReplyKeyboardRemove())
+                                              reply_markup=ReplyKeyboardRemove())
                     return ADD_TORRENT
 
                 elif torrent_type_selected == 'URL':
                     update.message.reply_text(STRINGS['send_url'],
-                        reply_markup=ReplyKeyboardRemove())
+                                              reply_markup=ReplyKeyboardRemove())
                     return ADD_URL
 
                 else:
                     update.message.reply_text(STRINGS['error'],
-                        reply_markup=ReplyKeyboardRemove())
+                                              reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
 
     def add_magnet(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
@@ -531,21 +544,24 @@ class Core(CorePluginBase):
                 log.debug("addmagnet of %s: %s" % (str(user), update.message.text))
 
                 try:
-                    #options = None
+                    # options = None
                     metainfo = update.message.text
                     """Adds a torrent with the given options.
-                    metainfo could either be base64 torrent data or a magnet link.
-                    Available options are listed in deluge.core.torrent.TorrentOptions.
+                    metainfo could either be base64 torrent
+                    data or a magnet link. Available options
+                    are listed in deluge.core.torrent.TorrentOptions.
                     """
                     if self.opts is None:
                         self.opts = {}
                     if is_magnet(metainfo):
-                        log.debug(prelog() + 'Adding torrent from magnet URI `%s` using options `%s` ...', metainfo, self.opts)
+                        log.debug(prelog() + 'Adding torrent from magnet ' +
+                                  'URI `%s` using options `%s` ...',
+                                  metainfo, self.opts)
                         tid = self.core.add_torrent_magnet(metainfo, self.opts)
                         self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['not_magnet'],
-                            reply_markup=ReplyKeyboardRemove())
+                                                  reply_markup=ReplyKeyboardRemove())
                 except Exception as e:
                     log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -554,12 +570,12 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-
     def add_torrent(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 user = update.message.chat.id
-                log.debug("addtorrent of %s: %s" % (str(user), update.message.document))
+                log.debug("addtorrent of %s: %s" %
+                          (str(user), update.message.document))
 
                 if update.message.document.mime_type == 'application/x-bittorrent':
                     # Get file info
@@ -573,21 +589,21 @@ class Core(CorePluginBase):
                         metainfo = b64encode(file_contents)
                         if self.opts is None:
                             self.opts = {}
-                        log.info(prelog() + 'Adding torrent from base64 string using options `%s` ...', self.opts)
+                        log.info(prelog() + 'Adding torrent from base64 string' +
+                                 'using options `%s` ...', self.opts)
                         tid = self.core.add_torrent_file(None, metainfo, self.opts)
                         self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['download_fail'],
-                            reply_markup=ReplyKeyboardRemove())
+                                                  reply_markup=ReplyKeyboardRemove())
                 else:
                     update.message.reply_text(STRINGS['not_file'],
-                        reply_markup=ReplyKeyboardRemove())
+                                              reply_markup=ReplyKeyboardRemove())
 
                 return ConversationHandler.END
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
 
     def add_url(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
@@ -599,7 +615,7 @@ class Core(CorePluginBase):
                     try:
                         # Download file
                         request = urllib2.Request(update.message.text.strip(),
-                            headers=HEADERS)
+                                                  headers=HEADERS)
                         status_code = urllib2.urlopen(request).getcode()
                         if status_code == 200:
                             file_contents = urllib2.urlopen(request).read()
@@ -607,25 +623,25 @@ class Core(CorePluginBase):
                             metainfo = b64encode(file_contents)
                             if self.opts is None:
                                 self.opts = {}
-                            log.info(prelog() + 'Adding torrent from base64 string using options `%s` ...', self.opts)
+                            log.info(prelog() + 'Adding torrent from base64 string' +
+                                     'using options `%s` ...', self.opts)
                             tid = self.core.add_torrent_file(None, metainfo, self.opts)
                             self.apply_label(tid)
                         else:
                             update.message.reply_text(STRINGS['download_fail'],
-                                reply_markup=ReplyKeyboardRemove())
+                                                      reply_markup=ReplyKeyboardRemove())
                     except Exception as e:
                         update.message.reply_text(STRINGS['download_fail'],
-                            reply_markup=ReplyKeyboardRemove())
+                                                  reply_markup=ReplyKeyboardRemove())
                         log.error(prelog() + str(e) + '\n' + traceback.format_exc())
                 else:
                     update.message.reply_text(STRINGS['not_url'],
-                        reply_markup=ReplyKeyboardRemove())
+                                              reply_markup=ReplyKeyboardRemove())
 
                 return ConversationHandler.END
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
 
     def apply_label(self, tid):
         try:
@@ -638,60 +654,61 @@ class Core(CorePluginBase):
                     if self.label not in label_plugin.get_labels():
                         label_plugin.add(self.label.lower())
                     label_plugin.set_torrent(tid, self.label.lower())
-                    log.debug(prelog() + 'Set label %s to torrent %s' % (self.label.lower(), tid))
+                    log.debug(prelog() + 'Set label %s to torrent %s' %
+                              (self.label.lower(), tid))
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.print_exc())
-
 
     def update_stats(self):
         log.debug('update_stats')
 
-
     def connect_events(self):
         event_manager = component.get('EventManager')
-        event_manager.register_event_handler('TorrentFinishedEvent', self.on_torrent_finished)
-        event_manager.register_event_handler('TorrentAddedEvent', self.on_torrent_added)
-
+        event_manager.register_event_handler('TorrentFinishedEvent',
+                                             self.on_torrent_finished)
+        event_manager.register_event_handler('TorrentAddedEvent',
+                                             self.on_torrent_added)
 
     def disconnect_events(self):
         event_manager = component.get('EventManager')
-        event_manager.deregister_event_handler('TorrentFinishedEvent', self.on_torrent_finished)
-        event_manager.deregister_event_handler('TorrentAddedEvent', self.on_torrent_added)
-
+        event_manager.deregister_event_handler('TorrentFinishedEvent',
+                                               self.on_torrent_finished)
+        event_manager.deregister_event_handler('TorrentAddedEvent',
+                                               self.on_torrent_added)
 
     def on_torrent_added(self, torrent_id):
-        if (self.config['telegram_notify_added'] == False):
+        if (self.config['telegram_notify_added'] is False):
             return
         try:
-            #torrent_id = str(alert.handle.info_hash())
+            # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status({})
             message = _('Added Torrent *%(name)s*') % torrent_status
-            log.info(prelog() + 'Sending torrent added message to ' + str(self.notifylist))
+            log.info(prelog() + 'Sending torrent added message to ' +
+                     str(self.notifylist))
             return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
         except Exception as e:
             log.error(prelog() + 'Error in alert %s' % str(e))
 
-
     def on_torrent_finished(self, torrent_id):
         try:
-            if (self.config['telegram_notify_finished'] == False):
+            if (self.config['telegram_notify_finished'] is False):
                 return
-            #torrent_id = str(alert.handle.info_hash())
+            # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status({})
             message = _('Finished Downloading *%(name)s*') % torrent_status
-            log.info(prelog() + 'Sending torrent finished message to ' + str(self.notifylist))
+            log.info(prelog() + 'Sending torrent finished message to ' +
+                     str(self.notifylist))
             return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
         except Exception, e:
-            log.error(prelog() + 'Error in alert %s' % str(e) + '\n' + traceback.format_exc())
+            log.error(prelog() + 'Error in alert %s' %
+                      str(e) + '\n' + traceback.format_exc())
 
-
-    def list_torrents(self, filter=lambda _:True):
+    def list_torrents(self, filter=lambda _: True):
         return '\n'.join([format_torrent_info(t) for t
-            in component.get('TorrentManager').torrents.values()
-            if filter(t)] or [STRINGS['no_items']])
-
+                         in component.get('TorrentManager').torrents.values()
+                         if filter(t)] or [STRINGS['no_items']])
 
     @export
     def set_config(self, config):
@@ -709,7 +726,6 @@ class Core(CorePluginBase):
             self.disable()
             self.enable()
 
-
     @export
     def restart_telegramer(self):
         """Disable and enable plugin"""
@@ -717,18 +733,16 @@ class Core(CorePluginBase):
         self.disable()
         self.enable()
 
-
     @export
     def get_config(self):
         """Returns the config dictionary"""
         log.debug(prelog() + 'Get config')
         return self.config.config
 
-
     @export
     def telegram_do_test(self):
         """Sends Telegram test message"""
         log.info(prelog() + 'Send test')
         self.bot.sendSticker(self.config['telegram_user'],
-            choice(list(STICKERS.values())))
+                             choice(list(STICKERS.values())))
         self.telegram_send(STRINGS['test_success'])
