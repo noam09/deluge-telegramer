@@ -1,3 +1,4 @@
+# encoding: utf-8
 #
 # core.py
 #
@@ -47,6 +48,10 @@ import logging
 import traceback
 from time import strftime
 from deluge.log import LOG as log
+
+# import sys
+# reload(sys)
+# sys.setdefaultencoding('utf8')
 
 #############################
 # log.setLevel(logging.DEBUG)
@@ -132,9 +137,10 @@ STRINGS = {'no_label': 'No Label',
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
-             ('name', lambda i, s: ' %s *%s* ' %
+             ('name', lambda i, s: u' %s *%s* ' %
               (s['state'] if s['state'].lower() not in EMOJI
-               else EMOJI[s['state'].lower()], i)),
+               else EMOJI[s['state'].lower()],
+               i)),
              ('total_wanted', lambda i, s: '(%s) ' % fsize(i)),
              ('progress', lambda i, s: '%s\n' % fpcnt(i/100)),
              ('num_seeds', None),
@@ -162,7 +168,14 @@ def is_int(s):
 
 def format_torrent_info(torrent):
     status = torrent.get_status(INFOS)
-    return ''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
+    log.debug(prelog())
+    log.debug(status)
+    try:
+        status_string = u''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
+    except UnicodeDecodeError as e:
+        # status_string = ''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
+        log.error(str(e))
+    return status_string
 
 
 class Core(CorePluginBase):
@@ -266,7 +279,7 @@ class Core(CorePluginBase):
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
     def error(self, bot, update, error):
-        logger.warn('Update "%s" caused error "%s"' % (update, error))
+        log.warn('Update "%s" caused error "%s"' % (update, error))
 
     def disable(self):
         try:
@@ -297,11 +310,22 @@ class Core(CorePluginBase):
                     # Every outgoing message filtered here
                     if str(usr) in self.whitelist or str(usr) in self.notifylist:
                         log.debug(prelog() + "to: " + str(usr))
-                        if parse_mode:
-                            msg = self.bot.send_message(usr, message,
-                                                        parse_mode='Markdown')
+                        if len(message) > 4096:
+                            log.debug(prelog() +
+                                      'Message length is {}'.format(str(len(message))))
+                            tmp = ''
+                            for line in message.split('\n'):
+                                tmp += line + '\n'
+                                if len(tmp) > 4000:
+                                    msg = self.bot.send_message(usr, tmp,
+                                                                parse_mode='Markdown')
+                                    tmp = ''
                         else:
-                            msg = self.bot.send_message(usr, message)
+                            if parse_mode:
+                                msg = self.bot.send_message(usr, message,
+                                                            parse_mode='Markdown')
+                            else:
+                                msg = self.bot.send_message(usr, message)
             log.debug(prelog() + 'return')
             return
 
