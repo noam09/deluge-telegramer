@@ -170,11 +170,13 @@ def format_torrent_info(torrent):
     status = torrent.get_status(INFOS)
     log.debug(prelog())
     log.debug(status)
+    status_string = ''
     try:
         status_string = u''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
-    except UnicodeDecodeError as e:
-        # status_string = ''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
-        log.error(str(e))
+    # except UnicodeDecodeError as e:
+    except Exception as e:
+        status_string = ''
+        log.error(prelog() + str(e) + '\n' + traceback.format_exc())
     return status_string
 
 
