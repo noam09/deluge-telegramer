@@ -54,7 +54,7 @@ from deluge.log import LOG as log
 # sys.setdefaultencoding('utf8')
 
 #############################
-# log.setLevel(logging.DEBUG)
+log.setLevel(logging.DEBUG)
 #############################
 
 
@@ -92,12 +92,8 @@ DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a ne
                  "telegram_users_notify":    "Contact @MyIDbot",
                  "telegram_notify_finished": True,
                  "telegram_notify_added":    True,
-                 "dir1":                     "",
-                 "cat1":                     "",
-                 "dir2":                     "",
-                 "cat2":                     "",
-                 "dir3":                     "",
-                 "cat3":                     ""}
+                 "categories": {"vasia":"vasia"}
+                 }
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
            '(KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
@@ -182,9 +178,11 @@ def format_torrent_info(torrent):
 
 class Core(CorePluginBase):
     def __init__(self, *args):
-        self.core = component.get('Core')
+        self.opts = {}
         self.bot = None
         self.updater = None
+        self.num_of_categories = 0
+        self.core = component.get('Core')
         log.debug(prelog() + 'Initialize class')
         super(Core, self).__init__(*args)
 
@@ -195,7 +193,6 @@ class Core(CorePluginBase):
                                                              DEFAULT_PREFS)
             self.whitelist = []
             self.notifylist = []
-            self.set_dirs = {}
             self.label = None
             self.COMMANDS = {'list':        self.cmd_list,
                              'down':        self.cmd_down,
@@ -421,71 +418,79 @@ class Core(CorePluginBase):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
             try:
-                self.set_dirs = {}
-                self.opts = {}
                 keyboard_options = []
-                """Currently there are 3 possible categories so
-                loop through cat1-3 and dir1-3, check if directories exist
-                """
-                for i in range(3):
-                    i = i+1
-                    if os.path.isdir(self.config['dir'+str(i)]):
-                        log.debug(prelog() + self.config['cat'+str(i)] +
-                                  ' ' + self.config['dir'+str(i)])
-                        self.set_dirs[self.config['cat'+str(i)]] = \
-                            self.config['dir'+str(i)]
+                filtered_dict = {c:d for c,d in self.config["categories"].iteritems() if os.path.isdir(d)}
+                for c,d in filtered_dict.iteritems():
+                    log.error(prelog() + c + ' : ' + d)
+                    keyboard_options.append([d])
 
-                if self.set_dirs:
-                    for k in self.set_dirs.keys():
-                        log.debug(prelog() + k)
-                        keyboard_options.append([k])
                 keyboard_options.append([STRINGS['no_category']])
-
                 update.message.reply_text(
                     '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
                     reply_markup=ReplyKeyboardMarkup(keyboard_options,
                                                      one_time_keyboard=True))
-
                 return CATEGORY
-
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    '''
+    @staticmethod
+    def __prepare_category(self , update, keyboard_options):
+        #if 0 < len(keyboard_options):
+        keyboard_options.append([STRINGS['no_category']])
+        update.message.reply_text(
+            '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
+            reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                             one_time_keyboard=True))
+        return CATEGORY
+    '''
+
+
+    def prepare_torrent_type(self, update):
+        # Request torrent type
+        keyboard_options = []
+        keyboard_options.append(['Magnet'])
+        keyboard_options.append(['.torrent'])
+        keyboard_options.append(['URL'])
+
+        update.message.reply_text(
+            STRINGS['what_kind'],
+            reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                             one_time_keyboard=True))
+        return TORRENT_TYPE
 
     def category(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             try:
-                if update.message.text == '/add' or \
-                   update.message.text == STRINGS['no_category']:
+                if STRINGS['no_category'] == update.message.text:
                     self.opts = {}
                 else:
-                    for i in range(3):
-                        i = i+1
-                        if self.config['cat'+str(i)] == update.message.text:
-                            cat_id = str(i)
-                            # move_completed_path vs download_location
-                            self.opts = {'move_completed_path':
-                                         self.config['dir'+cat_id],
-                                         'move_completed': True}
-                    # If none of the existing categories were selected,
-                    # maybe user is trying to save to a new directory
-                    if not self.opts:
-                        try:
-                            log.debug(prelog() + 'Custom directory entered: ' +
-                                      str(update.message.text))
-                            if update.message.text[0] == '"' and \
-                               update.message.text[-1] == '"':
-                                otherpath = os.path.abspath(os.path.realpath(
-                                    update.message.text[1:-1]))
-                                log.debug(prelog() +
-                                          'Attempt to create and save to: ' +
-                                          str(otherpath))
-                                if not os.path.exists(otherpath):
-                                    os.makedirs(otherpath)
-                                self.opts = {'move_completed_path': otherpath,
-                                             'move_completed': True}
-                        except Exception as e:
-                            log.error(prelog() + str(e) + '\n' +
-                                      traceback.format_exc())
+                    if update.message.text == self.config["categories"]:
+                        # move_completed_path vs download_location
+                        self.opts = {'move_completed_path':
+                                         self.config["categories"][update.message.text],
+                                     'move_completed': True}
+
+                        # If none of the existing categories were selected,
+                        # maybe user is trying to save to a new directory
+                        if not self.opts:
+                            try:
+                                log.debug(prelog() + 'Custom directory entered: ' +
+                                          str(update.message.text))
+                                if update.message.text[0] == '"' and \
+                                        update.message.text[-1] == '"':
+                                    otherpath = os.path.abspath(os.path.realpath(
+                                        update.message.text[1:-1]))
+                                    log.debug(prelog() +
+                                              'Attempt to create and save to: ' +
+                                              str(otherpath))
+                                    if not os.path.exists(otherpath):
+                                        os.makedirs(otherpath)
+                                    self.opts = {'move_completed_path': otherpath,
+                                                 'move_completed': True}
+                            except Exception as e:
+                                log.error(prelog() + str(e) + '\n' +
+                                          traceback.format_exc())
 
                 keyboard_options = []
                 self.label = None
@@ -498,16 +503,18 @@ class Core(CorePluginBase):
                             keyboard_options.append([g])
                 except Exception as e:
                     log.debug(prelog() + 'Enabling Label plugin failed')
-                    log.error(prelog() + str(e) + '\n' +
-                              traceback.format_exc())
-                keyboard_options.append([STRINGS['no_label']])
+                    log.error(prelog() + str(e) + '\n' +traceback.format_exc())
 
-                update.message.reply_text(
-                    STRINGS['which_label'],
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
+                if len(keyboard_options) > 0:
+                    keyboard_options.append([STRINGS['no_label']])
 
-                return SET_LABEL
+                    update.message.reply_text(
+                        STRINGS['which_label'],
+                        reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                         one_time_keyboard=True))
+                    return SET_LABEL
+                else:
+                    return self.prepare_torrent_type(update)
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
@@ -521,16 +528,8 @@ class Core(CorePluginBase):
                 log.debug(prelog() + "Label: %s" % (update.message.text))
 
                 # Request torrent type
-                keyboard_options = []
-                keyboard_options.append(['Magnet'])
-                keyboard_options.append(['.torrent'])
-                keyboard_options.append(['URL'])
+                return self.prepare_torrent_type(update)
 
-                update.message.reply_text(
-                    STRINGS['what_kind'],
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
-                return TORRENT_TYPE
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -595,6 +594,7 @@ class Core(CorePluginBase):
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
 
     def add_torrent(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
@@ -742,9 +742,11 @@ class Core(CorePluginBase):
         log.debug(prelog() + 'Set config')
         dirty = False
         for key in config.keys():
-            if self.config[key] != config[key]:
+            if ("categories" == key and cmp(self.config[key], config[key])) or \
+                    self.config[key] != config[key]:
                 dirty = True
                 self.config[key] = config[key]
+
         if dirty:
             log.info(prelog() + 'Config changed, reloading')
             self.config.save()

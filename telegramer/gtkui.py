@@ -53,7 +53,6 @@ try:
 except ImportError as e:
     log.error('Telegramer: Import error - %s', str(e))
 
-
 class GtkUI(GtkPluginBase):
     def enable(self):
         self.glade = gtk.glade.XML(get_resource("config.glade"))
@@ -80,13 +79,15 @@ class GtkUI(GtkPluginBase):
             "telegram_user": self.glade.get_widget("telegram_user").get_text(),
             "telegram_users": self.glade.get_widget("telegram_users").get_text(),
             "telegram_users_notify": self.glade.get_widget("telegram_users_notify").get_text(),
-            "cat1": self.glade.get_widget("cat1").get_text(),
-            "dir1": self.glade.get_widget("dir1").get_text(),
-            "cat2": self.glade.get_widget("cat2").get_text(),
-            "dir2": self.glade.get_widget("dir2").get_text(),
-            "cat3": self.glade.get_widget("cat3").get_text(),
-            "dir3": self.glade.get_widget("dir3").get_text()
+            "categories": {self.glade.get_widget("cat1").get_text():
+                             self.glade.get_widget("dir1").get_text(),
+                         self.glade.get_widget("cat2").get_text():
+                             self.glade.get_widget("dir2").get_text(),
+                         self.glade.get_widget("cat3").get_text():
+                             self.glade.get_widget("dir3").get_text()
+                         }
         }
+        log.error(config)
         client.telegramer.set_config(config)
 
     def on_show_prefs(self):
@@ -100,12 +101,10 @@ class GtkUI(GtkPluginBase):
         self.glade.get_widget("telegram_user").set_text(config["telegram_user"])
         self.glade.get_widget("telegram_users").set_text(config["telegram_users"])
         self.glade.get_widget("telegram_users_notify").set_text(config["telegram_users_notify"])
-        self.glade.get_widget("cat1").set_text(config["cat1"])
-        self.glade.get_widget("dir1").set_text(config["dir1"])
-        self.glade.get_widget("cat2").set_text(config["cat2"])
-        self.glade.get_widget("dir2").set_text(config["dir2"])
-        self.glade.get_widget("cat3").set_text(config["cat3"])
-        self.glade.get_widget("dir3").set_text(config["dir3"])
+
+        for ind, (c, d) in enumerate(config["categories"].items()):
+            self.glade.get_widget("cat"+str(ind+1)).set_text(c)
+            self.glade.get_widget("dir"+str(ind+1)).set_text(d)
 
     def on_button_test_clicked(self, Event=None):
         client.telegramer.telegram_do_test()
