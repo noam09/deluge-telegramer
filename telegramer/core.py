@@ -278,6 +278,7 @@ class Core(CorePluginBase):
                 # Start the Bot
                 self.updater.start_polling(poll_interval=0.05)
 
+
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -421,7 +422,7 @@ class Core(CorePluginBase):
     def add(self, bot, update):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
-            if "YaRSS2_43" in component.get('Core').get_available_plugins():
+            if "YaRSS2" in component.get('Core').get_available_plugins():
                 return self.prepare_torrents_or_rss(bot, update)
             else:
                 return self.add_torrents(bot, update)
