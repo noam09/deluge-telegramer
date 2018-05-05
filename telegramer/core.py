@@ -46,7 +46,6 @@
 import os
 import logging
 import traceback
-from time import strftime
 from deluge.log import LOG as log
 
 # import sys
@@ -84,7 +83,7 @@ try:
 except ImportError as e:
     log.error(prelog() + 'Import error - %s\n%s' % (str(e), traceback.format_exc()))
 
-CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL = range(6)
+CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, TOR_OR_RSS, ADD_RSS = range(8)
 
 DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a new bot",
                  "telegram_user":            "Contact @MyIDbot",
@@ -92,7 +91,7 @@ DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a ne
                  "telegram_users_notify":    "Contact @MyIDbot",
                  "telegram_notify_finished": True,
                  "telegram_notify_added":    True,
-                 "categories": {"vasia":"vasia"}
+                 "categories": {}
                  }
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
@@ -115,6 +114,7 @@ STRINGS = {'no_label': 'No Label',
            'no_category': 'Use Default Settings',
            'cancel': 'Send /cancel at any time to abort',
            'test_success': 'It works!',
+           'torrent_or_rss': 'What you wish to add ?',
            'which_cat': 'Which category/directory?\nRemember to quote ' +
                         'directory paths ("/path/to/dir")',
            'which_label': 'Which label?',
@@ -129,7 +129,9 @@ STRINGS = {'no_label': 'No Label',
            'not_file': 'Aw man... That\'s not a torrent file',
            'not_url': 'Aw man... Bad link',
            'download_fail': 'Aw man... Download failed',
-           'no_items': 'No items'}
+           'no_items': 'No items',
+           "torrent":'Torrent',
+           "rss":"RSS"}
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
@@ -248,7 +250,9 @@ class Core(CorePluginBase):
                         TORRENT_TYPE: [MessageHandler(Filters.text, self.torrent_type)],
                         ADD_MAGNET: [MessageHandler(Filters.text, self.add_magnet)],
                         ADD_TORRENT: [MessageHandler(Filters.document, self.add_torrent)],
-                        ADD_URL: [MessageHandler(Filters.text, self.add_url)]
+                        ADD_URL: [MessageHandler(Filters.text, self.add_url)],
+                        TOR_OR_RSS: [MessageHandler(Filters.text, self.tor_or_rss)],
+                        ADD_RSS: [MessageHandler(Filters.text, self.add_rss)]
                     },
                     fallbacks=[CommandHandler('cancel', self.cancel)]
                 )
@@ -417,33 +421,54 @@ class Core(CorePluginBase):
     def add(self, bot, update):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
-            try:
-                keyboard_options = []
-                filtered_dict = {c:d for c,d in self.config["categories"].iteritems() if os.path.isdir(d)}
-                for c,d in filtered_dict.iteritems():
-                    log.error(prelog() + c + ' : ' + d)
-                    keyboard_options.append([d])
+            if "YaRSS2_43" in component.get('Core').get_available_plugins():
+                return self.prepare_torrents_or_rss(bot, update)
+            else:
+                return self.add_torrents(bot, update)
 
-                keyboard_options.append([STRINGS['no_category']])
-                update.message.reply_text(
-                    '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
-                return CATEGORY
-            except Exception as e:
-                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+    def prepare_torrents_or_rss(self, bot, update):
+        try:
+            keyboard_options = [[STRINGS['torrent']], [STRINGS['rss']]]
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['torrent_or_rss'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                 one_time_keyboard=True))
+            return TOR_OR_RSS
 
-    '''
-    @staticmethod
-    def __prepare_category(self , update, keyboard_options):
-        #if 0 < len(keyboard_options):
-        keyboard_options.append([STRINGS['no_category']])
-        update.message.reply_text(
-            '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
-            reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                             one_time_keyboard=True))
-        return CATEGORY
-    '''
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def tor_or_rss(self, bot, update):
+        try:
+            if str(update.message.chat.id) not in self.whitelist:
+                return
+
+            if STRINGS['torrent'] == update.message.text:
+                return self.add_torrents(bot, update)
+
+            if STRINGS['rss'] == update.message.text:
+                return self.add_rss(bot,update)
+                #return ADD_RSS
+
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def add_torrents(self, bot, update):
+        try:
+            keyboard_options = []
+            filtered_dict = {c: d for c, d in self.config["categories"].iteritems() if os.path.isdir(d)}
+            for c, d in filtered_dict.iteritems():
+                log.error(prelog() + c + ' : ' + d)
+                keyboard_options.append([c])
+
+            keyboard_options.append([STRINGS['no_category']])
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                 one_time_keyboard=True))
+            return CATEGORY
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
 
     def prepare_torrent_type(self, update):
@@ -595,7 +620,6 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-
     def add_torrent(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             try:
@@ -668,6 +692,16 @@ class Core(CorePluginBase):
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def add_rss(self, bot, update):
+        try:
+            if str(update.message.chat.id) not in self.whitelist:
+                return
+            update.message.reply_text('Under construction',
+                                      reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
     def apply_label(self, tid):
         try:

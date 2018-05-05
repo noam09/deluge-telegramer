@@ -38,6 +38,7 @@
 #    statement from all source files in the program, then also delete it here.
 #
 
+
 try:
     from deluge.log import LOG as log
 except Exception as e:
@@ -46,12 +47,13 @@ except Exception as e:
 try:
     import gtk
     import deluge.common
-    from common import get_resource
+    from common import get_resource, REGEX_TMPL_FILE_NAME
     from deluge.ui.client import client
     import deluge.component as component
     from deluge.plugins.pluginbase import GtkPluginBase
 except ImportError as e:
     log.error('Telegramer: Import error - %s', str(e))
+
 
 class GtkUI(GtkPluginBase):
     def enable(self):
@@ -85,10 +87,18 @@ class GtkUI(GtkPluginBase):
                              self.glade.get_widget("dir2").get_text(),
                          self.glade.get_widget("cat3").get_text():
                              self.glade.get_widget("dir3").get_text()
-                         }
+                         },
+            "regex_exp": {self.glade.get_widget("rname1").get_text():
+                               self.glade.get_widget("reg1").get_text()
+                           }
         }
-        log.error(config)
+        #log.error(config)
         client.telegramer.set_config(config)
+        for ind, (n, r) in enumerate(config["regex_exp"].items()):
+            if REGEX_TMPL_FILE_NAME not in r:
+                log.error("Your regex " + n + "template doesn't contains "
+                          + REGEX_TMPL_FILE_NAME + " string and wouldn't work")
+                break
 
     def on_show_prefs(self):
         client.telegramer.get_config().addCallback(self.cb_get_config)
@@ -105,6 +115,10 @@ class GtkUI(GtkPluginBase):
         for ind, (c, d) in enumerate(config["categories"].items()):
             self.glade.get_widget("cat"+str(ind+1)).set_text(c)
             self.glade.get_widget("dir"+str(ind+1)).set_text(d)
+
+        for ind, (n, r) in enumerate(config["regex_exp"].items()):
+            self.glade.get_widget("rname"+str(ind+1)).set_text(n)
+            self.glade.get_widget("reg"+str(ind+1)).set_text(r)
 
     def on_button_test_clicked(self, Event=None):
         client.telegramer.telegram_do_test()
