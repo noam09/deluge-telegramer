@@ -89,7 +89,11 @@ class GtkUI(GtkPluginBase):
                              self.glade.get_widget("dir3").get_text()
                          },
             "regex_exp": {self.glade.get_widget("rname1").get_text():
-                               self.glade.get_widget("reg1").get_text()
+                               self.glade.get_widget("reg1").get_text(),
+                          self.glade.get_widget("rname2").get_text():
+                              self.glade.get_widget("reg2").get_text(),
+                          self.glade.get_widget("rname3").get_text():
+                              self.glade.get_widget("reg3").get_text()
                            }
         }
         #log.error(config)
