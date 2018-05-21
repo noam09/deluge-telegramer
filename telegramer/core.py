@@ -83,7 +83,8 @@ try:
 except ImportError as e:
     log.error(prelog() + 'Import error - %s\n%s' % (str(e), traceback.format_exc()))
 
-CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, TOR_OR_RSS, RSS_FEED = range(8)
+CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, TOR_OR_RSS, RSS_FEED, FILE_NAME, \
+REGEX = range(10)
 
 DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a new bot",
                  "telegram_user":            "Contact @MyIDbot",
@@ -133,6 +134,7 @@ STRINGS = {'no_label': 'No Label',
            "torrent":'Torrent',
            "rss":"RSS",
            "which_rss_feed":'Which RSS feed?',
+           "which_regex":'Which ReGex template to use?',
            "file_name":'What is the movie name?'}
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
@@ -257,7 +259,9 @@ class Core(CorePluginBase):
                         ADD_TORRENT: [MessageHandler(Filters.document, self.add_torrent)],
                         ADD_URL: [MessageHandler(Filters.text, self.add_url)],
                         TOR_OR_RSS: [MessageHandler(Filters.text, self.tor_or_rss)],
-                        RSS_FEED: [MessageHandler(Filters.text, self.rss_feed)]
+                        RSS_FEED: [MessageHandler(Filters.text, self.rss_feed)],
+                        REGEX: [MessageHandler(Filters.text, self.regex)],
+                        FILE_NAME: [MessageHandler(Filters.text, self.rss_file_name)]
                     },
                     fallbacks=[CommandHandler('cancel', self.cancel)]
                 )
@@ -497,7 +501,7 @@ class Core(CorePluginBase):
                 if STRINGS['no_category'] == update.message.text:
                     self.opts = {}
                 else:
-                    if update.message.text == self.config["categories"]:
+                    if update.message.text in self.config["categories"].keys():
                         # move_completed_path vs download_location
                         self.opts = {'move_completed_path':
                                          self.config["categories"][update.message.text],
@@ -547,7 +551,7 @@ class Core(CorePluginBase):
                     return SET_LABEL
                 else:
                     if self.isRss:
-                        return self.prepare_rss_feed()
+                        return self.prepare_rss_feed(bot, update)
                     else:
                         return self.prepare_torrent_type(update)
 
@@ -555,6 +559,7 @@ class Core(CorePluginBase):
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
     def prepare_rss_feed(self, bot, update):
+
         if self.yarss_plugin is None:
             self.yarss_plugin = component.get('CorePlugin.YaRSS2')
         if self.yarss_plugin:
@@ -568,16 +573,59 @@ class Core(CorePluginBase):
         return ConversationHandler.END
 
     def rss_feed(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
         self.isRss = True
         rss_feed = next(rss_feed for rss_feed in self.yarss_config["rssfeeds"].values()
                             if rss_feed["name"] == update.message.text)
 
         self.yarss_data.subscription_data["rssfeed_key"] = rss_feed["key"]
+        log.debug(prelog() + 'user choose rss_feed' + rss_feed["name"])
 
+        keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys()]
+        update.message.reply_text(
+            '%s\n%s' % (STRINGS['which_regex'], STRINGS['cancel']),
+            reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+        return REGEX
+
+    def regex(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+
+        self.yarss_data.subscription_data["regex_include"] = self.config["regex_exp"][update.message.text]
+
+        log.debug(prelog() + 'user choose regex ' + update.message.text)
         update.message.reply_text(
             '%s\n%s' % (STRINGS['file_name'], STRINGS['cancel']),
             reply_markup=ReplyKeyboardMarkup([],one_time_keyboard=True))
+        return FILE_NAME
 
+
+    def rss_file_name(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+
+        log.debug(prelog() + update.message.text)
+        update.message.text = re.sub(' +', ' ', update.message.text)
+
+        self.yarss_data.subscription_data["regex_include"] = re.sub(r"NAME", update.message.text,
+                                                                    self.yarss_data.subscription_data["regex_include"])
+        self.yarss_data.subscription_data["regex_include"] = re.sub(r" ", ".*",
+                                                                    self.yarss_data.subscription_data["regex_include"])
+        log.debug(prelog() + "Adding Regex " + self.yarss_data.subscription_data["regex_include"])
+
+        self.yarss_data.subscription_data["label"] = self.label
+        self.yarss_data.subscription_data["name"] = update.message.text
+        log.error("============")
+        log.error(self.opts)
+        log.error("============")
+        if self.opts is not None:
+            self.yarss_data.subscription_data["download_location"] = self.opts["move_completed_path"]
+
+        self.yarss_data.addRss()
+        update.message.reply_text(
+            '%s' % (STRINGS['added']),
+            reply_markup=ReplyKeyboardMarkup([], one_time_keyboard=True))
         return ConversationHandler.END
 
     def set_label(self, bot, update):
@@ -878,4 +926,6 @@ class YarssData:
         self.subscription_data["regex_include"] = ""
         self.subscription_data["download_location"] = ""
 
-
+    def addRss(self):
+        self.yarss2_plugin = component.get('CorePlugin.YaRSS2')
+        self.yarss2_plugin.save_subscription(subscription_data=self.subscription_data, delete=False)
