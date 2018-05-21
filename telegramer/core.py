@@ -135,6 +135,7 @@ STRINGS = {'no_label': 'No Label',
            "rss":"RSS",
            "which_rss_feed":'Which RSS feed?',
            "which_regex":'Which ReGex template to use?',
+           "no_rss_found":'No RSS feeds found - exiting',
            "file_name":'What is the movie name?'}
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
@@ -565,10 +566,17 @@ class Core(CorePluginBase):
         if self.yarss_plugin:
             self.yarss_config = self.yarss_plugin.get_config()
             keyboard_options = [[rss_feed["name"]] for rss_feed in self.yarss_config["rssfeeds"].values()]
+            # if no rss_feeds found
+            if not bool(keyboard_options):
+                log.debug(prelog() + STRINGS['no_rss_found'])
+                update.message.reply_text('%s' % (STRINGS['which_rss_feed']),
+                                          reply_markup=ReplyKeyboardMarkup([],one_time_keyboard=True))
+                return ConversationHandler.END
+
             update.message.reply_text(
                 '%s\n%s' % (STRINGS['which_rss_feed'], STRINGS['cancel']),
-                reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                 one_time_keyboard=True))
+                reply_markup=ReplyKeyboardMarkup(keyboard_options,one_time_keyboard=True))
+
             return RSS_FEED
         return ConversationHandler.END
 
