@@ -92,6 +92,7 @@ DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a ne
                  "telegram_users_notify":    "Contact @MyIDbot",
                  "telegram_notify_finished": True,
                  "telegram_notify_added":    True,
+                 "minimum_speed":            -1,
                  "dir1":                     "",
                  "cat1":                     "",
                  "dir2":                     "",
@@ -196,6 +197,9 @@ class Core(CorePluginBase):
             self.whitelist = []
             self.notifylist = []
             self.set_dirs = {}
+
+            log.error("Minimum speed in enable %s ",self.config['minimum_speed'])
+
             self.label = None
             self.COMMANDS = {'list':        self.cmd_list,
                              'down':        self.cmd_down,
@@ -236,7 +240,11 @@ class Core(CorePluginBase):
                         log.debug(prelog() + 'Notify: ' + str(self.notifylist))
 
                 reactor.callLater(2, self.connect_events)
-
+                try :
+                    self.checkSpeed_timer = LoopingCall(self.checkSpeed)
+                    self.checkSpeed_timer.start(60, now=False)
+                except :
+                    log.error("Error while starting loop.")
                 self.bot = Bot(self.config['telegram_token'])
                 # Create the EventHandler and pass it bot's token.
                 self.updater = Updater(self.config['telegram_token'])
@@ -285,6 +293,7 @@ class Core(CorePluginBase):
 
     def disable(self):
         try:
+            self.checkSpeed_timer.stop()
             log.info(prelog() + 'Disable')
             reactor.callLater(2, self.disconnect_events)
             self.whitelist = []
@@ -687,6 +696,19 @@ class Core(CorePluginBase):
 
     def update_stats(self):
         log.debug('update_stats')
+
+    def checkSpeed(self):
+        log.debug("Minimum speed: %s" , self.config['minimum_speed'])
+        if self.config['minimum_speed'] == -1:
+                return
+        try:
+            for t in component.get('TorrentManager').torrents.values():
+                if t.status.download_rate < (self.config['minimum_speed'] * 1024):
+                    message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})				
+                    self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
+        except Exception as e:
+            log.error(prelog() + 'Error in alert %s' % str(e))
+        return
 
     def connect_events(self):
         event_manager = component.get('EventManager')
