@@ -93,6 +93,7 @@ DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a ne
                  "telegram_notify_finished": True,
                  "telegram_notify_added":    True,
                  "minimum_speed":            -1,
+                 "user_timer":               60,
                  "dir1":                     "",
                  "cat1":                     "",
                  "dir2":                     "",
@@ -197,9 +198,6 @@ class Core(CorePluginBase):
             self.whitelist = []
             self.notifylist = []
             self.set_dirs = {}
-
-            log.error("Minimum speed in enable %s ",self.config['minimum_speed'])
-
             self.label = None
             self.COMMANDS = {'list':        self.cmd_list,
                              'down':        self.cmd_down,
@@ -242,7 +240,7 @@ class Core(CorePluginBase):
                 reactor.callLater(2, self.connect_events)
                 try :
                     self.checkSpeed_timer = LoopingCall(self.checkSpeed)
-                    self.checkSpeed_timer.start(60, now=False)
+                    self.checkSpeed_timer.start(int(self.config['user_timer']), now=False)
                 except :
                     log.error("Error while starting loop.")
                 self.bot = Bot(self.config['telegram_token'])
@@ -699,7 +697,7 @@ class Core(CorePluginBase):
 
     def checkSpeed(self):
         log.debug("Minimum speed: %s" , self.config['minimum_speed'])
-        if self.config['minimum_speed'] == -1:
+        if self.config['minimum_speed'] <= -1:
                 return
         try:
             for t in component.get('TorrentManager').torrents.values():
