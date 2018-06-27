@@ -701,9 +701,10 @@ class Core(CorePluginBase):
                 return
         try:
             for t in component.get('TorrentManager').torrents.values():
-                if t.status.download_rate < (self.config['minimum_speed'] * 1024):
-                    message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})				
-                    self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
+                if t.status.state == 3 :
+                    if t.status.download_rate < (self.config['minimum_speed'] * 1024):
+                        message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})				
+                        self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
         except Exception as e:
             log.error(prelog() + 'Error in alert %s' % str(e))
         return
