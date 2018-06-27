@@ -238,11 +238,12 @@ class Core(CorePluginBase):
                         log.debug(prelog() + 'Notify: ' + str(self.notifylist))
 
                 reactor.callLater(2, self.connect_events)
-                try :
-                    self.checkSpeed_timer = LoopingCall(self.checkSpeed)
-                    self.checkSpeed_timer.start(int(self.config['user_timer']), now=False)
-                except :
-                    log.error("Error while starting loop.")
+                if self.config['minimum_speed'] > -1 :
+                    try :
+                        self.checkSpeed_timer = LoopingCall(self.checkSpeed)
+                        self.checkSpeed_timer.start(int(self.config['user_timer']), now=False)
+                    except :
+                        log.error("Error while starting loop.")
                 self.bot = Bot(self.config['telegram_token'])
                 # Create the EventHandler and pass it bot's token.
                 self.updater = Updater(self.config['telegram_token'])
@@ -697,8 +698,6 @@ class Core(CorePluginBase):
 
     def checkSpeed(self):
         log.debug("Minimum speed: %s" , self.config['minimum_speed'])
-        if self.config['minimum_speed'] <= -1:
-                return
         try:
             for t in component.get('TorrentManager').torrents.values():
                 if t.status.state == 3 :
