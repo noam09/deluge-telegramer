@@ -240,8 +240,8 @@ class Core(CorePluginBase):
                 reactor.callLater(2, self.connect_events)
                 if self.config['minimum_speed'] > -1 :
                     try :
-                        self.checkSpeed_timer = LoopingCall(self.checkSpeed)
-                        self.checkSpeed_timer.start(int(self.config['user_timer']), now=False)
+                        self.check_speed_timer = LoopingCall(self.check_speed)
+                        self.check_speed_timer.start(int(self.config['user_timer']), now=False)
                     except :
                         log.error("Error while starting loop.")
                 self.bot = Bot(self.config['telegram_token'])
@@ -292,7 +292,7 @@ class Core(CorePluginBase):
 
     def disable(self):
         try:
-            self.checkSpeed_timer.stop()
+            self.check_speed_timer.stop()
             log.info(prelog() + 'Disable')
             reactor.callLater(2, self.disconnect_events)
             self.whitelist = []
@@ -696,7 +696,7 @@ class Core(CorePluginBase):
     def update_stats(self):
         log.debug('update_stats')
 
-    def checkSpeed(self):
+    def check_speed(self):
         log.debug("Minimum speed: %s" , self.config['minimum_speed'])
         try:
             for t in component.get('TorrentManager').torrents.values():
