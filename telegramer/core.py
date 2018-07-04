@@ -700,20 +700,12 @@ class Core(CorePluginBase):
         log.debug("Minimum speed: %s" , self.config['minimum_speed'])
         try:
             for t in component.get('TorrentManager').torrents.values():
-                # torrent.status.state, as declared in libtorrent/torrent_status.hpp
-                # 1: checking_files 
-                # 2: downloading_metadata
-                # 3: downloading
-                # 4: finished 
-                # 5: seeding
-                # 6: allocating
-                # 7: checking_resume_data
-                if t.status.state == 3 :
+                if t.get_status(('state',))['state'] == 'Downloading' :
                     if t.status.download_rate < (self.config['minimum_speed'] * 1024):
                         message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})				
                         self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
-        except Exception as e:
-            log.error(prelog() + 'Error in alert %s' % str(e))
+        except Exception as e :
+            log.error(prelog() + 'Unexpected behavior %s.' % str(e))
         return
 
     def connect_events(self):
