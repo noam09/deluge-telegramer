@@ -573,7 +573,7 @@ class Core(CorePluginBase):
             # if no rss_feeds found
             if not bool(keyboard_options):
                 log.debug(prelog() + STRINGS['no_rss_found'])
-                update.message.reply_text('%s' % (STRINGS['which_rss_feed']),
+                update.message.reply_text('%s' % (STRINGS['no_rss_found']),
                                           reply_markup=ReplyKeyboardMarkup([],one_time_keyboard=True))
                 return ConversationHandler.END
 
