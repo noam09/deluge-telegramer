@@ -140,7 +140,8 @@ STRINGS = {'no_label': 'No Label',
            "no_rss_found":'No RSS feeds found - exiting',
            "file_name":'What is the movie name?',
            "noNAME":'The regex you choose dosn\'t contains \'' + REGEX_SUBS_WORD +
-                    '\' sequence - please choose another'}
+                    '\' sequence - please choose another',
+           "no_regex":'No regex found - exiting'}
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
@@ -594,7 +595,14 @@ class Core(CorePluginBase):
         self.yarss_data.subscription_data["rssfeed_key"] = rss_feed["key"]
         log.debug(prelog() + 'user choose rss_feed' + rss_feed["name"])
 
-        keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys()]
+        keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys() if  regex_name != '']
+
+        if not bool(keyboard_options):
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['no_regex'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup([], one_time_keyboard=True))
+            return ConversationHandler.END
+
         update.message.reply_text(
             '%s\n%s' % (STRINGS['which_regex'], STRINGS['cancel']),
             reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
@@ -634,9 +642,6 @@ class Core(CorePluginBase):
 
         self.yarss_data.subscription_data["label"] = self.label
         self.yarss_data.subscription_data["name"] = update.message.text
-        log.error("============")
-        log.error(self.opts)
-        log.error("============")
         if self.opts is not None:
             self.yarss_data.subscription_data["download_location"] = self.opts["move_completed_path"]
 
