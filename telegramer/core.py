@@ -111,6 +111,8 @@ EMOJI = {'seeding':     u'\u23eb',
          'error':       u'\u2757\ufe0f',
          'downloading': u'\u23ec'}
 
+REGEX_SUBS_WORD = "NAME"
+
 STRINGS = {'no_label': 'No Label',
            'no_category': 'Use Default Settings',
            'cancel': 'Send /cancel at any time to abort',
@@ -136,7 +138,9 @@ STRINGS = {'no_label': 'No Label',
            "which_rss_feed":'Which RSS feed?',
            "which_regex":'Which ReGex template to use?',
            "no_rss_found":'No RSS feeds found - exiting',
-           "file_name":'What is the movie name?'}
+           "file_name":'What is the movie name?',
+           "noNAME":'The regex you choose dosn\'t contains \'' + REGEX_SUBS_WORD +
+                    '\' sequence - please choose another'}
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
@@ -599,14 +603,20 @@ class Core(CorePluginBase):
     def regex(self, bot, update):
         if not str(update.message.chat.id) in self.whitelist:
             return
+        if REGEX_SUBS_WORD in self.config["regex_exp"][update.message.text]:
+            self.yarss_data.subscription_data["regex_include"] = self.config["regex_exp"][update.message.text]
 
-        self.yarss_data.subscription_data["regex_include"] = self.config["regex_exp"][update.message.text]
-
-        log.debug(prelog() + 'user choose regex ' + update.message.text)
-        update.message.reply_text(
-            '%s\n%s' % (STRINGS['file_name'], STRINGS['cancel']),
-            reply_markup=ReplyKeyboardMarkup([],one_time_keyboard=True))
-        return FILE_NAME
+            log.debug(prelog() + 'user choose regex ' + update.message.text)
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['file_name'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup([],one_time_keyboard=True))
+            return FILE_NAME
+        else:
+            keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys()]
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['noNAME'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+            return REGEX
 
 
     def rss_file_name(self, bot, update):
