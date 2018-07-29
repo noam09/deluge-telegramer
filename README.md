@@ -127,7 +127,7 @@ Once the download is complete, you may choose to receive a Telegram notification
 
 ## Known Issues
 
-* Currently none, please post any issues you find on the [issue tracker](http://github.com/noam09/deluge-telegramer/issues),.
+* Currently none, please post any issues you find on the [issue tracker](http://github.com/noam09/deluge-telegramer/issues).
 
 ## License
 This is free software under the GPL v3 open source license. Feel free to do with it what you wish, but any modification must be open sourced. A copy of the license is included.
