@@ -80,6 +80,9 @@ class GtkUI(GtkPluginBase):
             "telegram_user": self.glade.get_widget("telegram_user").get_text(),
             "telegram_users": self.glade.get_widget("telegram_users").get_text(),
             "telegram_users_notify": self.glade.get_widget("telegram_users_notify").get_text(),
+            "proxy_url": self.glade.get_widget("proxy_url").get_text(),
+            "urllib3_proxy_kwargs_username": self.glade.get_widget("urllib3_proxy_kwargs_username").get_text(),
+            "urllib3_proxy_kwargs_password": self.glade.get_widget("urllib3_proxy_kwargs_password").get_text(),
             "cat1": self.glade.get_widget("cat1").get_text(),
             "dir1": self.glade.get_widget("dir1").get_text(),
             "cat2": self.glade.get_widget("cat2").get_text(),
@@ -100,6 +103,9 @@ class GtkUI(GtkPluginBase):
         self.glade.get_widget("telegram_user").set_text(config["telegram_user"])
         self.glade.get_widget("telegram_users").set_text(config["telegram_users"])
         self.glade.get_widget("telegram_users_notify").set_text(config["telegram_users_notify"])
+        self.glade.get_widget("proxy_url").set_text(config["proxy_url"]),
+        self.glade.get_widget('urllib3_proxy_kwargs_username').set_text(config["urllib3_proxy_kwargs_username"]),
+        self.glade.get_widget("urllib3_proxy_kwargs_password").set_text(config["urllib3_proxy_kwargs_password"]),
         self.glade.get_widget("cat1").set_text(config["cat1"])
         self.glade.get_widget("dir1").set_text(config["dir1"])
         self.glade.get_widget("cat2").set_text(config["cat2"])

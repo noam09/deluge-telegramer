@@ -159,6 +159,31 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             autoWidth: true,
             value: ''
         }));
+        fieldset = this.add({
+            xtype: 'fieldset',
+            title: _('Proxy config'),
+            autoHeight: true,
+            autoWidth: true,
+            defaultType: 'textfield'
+        });
+        this.opts.bind('proxy_url', fieldset.add({
+            fieldLabel: _('Proxy url'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'proxy_url'
+        }));
+        this.opts.bind('urllib3_proxy_kwargs_username', fieldset.add({
+            fieldLabel: _('Username'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'urllib3_proxy_kwargs_username'
+        }));
+        this.opts.bind('urllib3_proxy_kwargs_password', fieldset.add({
+            fieldLabel: _('Password'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'urllib3_proxy_kwargs_password'
+        }));
         this.teleTester = this.add({
             fieldLabel: _(''),
             name: 'telegram_test',
@@ -216,6 +241,15 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             if (!Ext.isEmpty(config['telegram_notify_finished'])) {
                 config['telegram_notify_finished'] = config['telegram_notify_finished'];
             }
+            if (!Ext.isEmpty(config['proxy_url'])) {
+                config['proxy_url'] = config['proxy_url']
+            }
+            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_username'])) {
+                config['urllib3_proxy_kwargs_username'] = config['urllib3_proxy_kwargs_username']
+            }
+            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_password'])) {
+                config['urllib3_proxy_kwargs_password'] = config['urllib3_proxy_kwargs_password']
+            }
             if (!Ext.isEmpty(config['cat1'])) {
                 config['cat1'] = config['cat1'];
             }
@@ -257,6 +291,15 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             }
             if (!Ext.isEmpty(changed['telegram_notify_finished'])) {
             changed['telegram_notify_finished'] = changed['telegram_notify_finished'];
+            }
+            if (!Ext.isEmpty(changed['proxy_url'])) {
+            changed['proxy_url'] = changed['proxy_url']
+            }
+            if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_username'])) {
+            changed['urllib3_proxy_kwargs_username'] = changed['urllib3_proxy_kwargs_username']
+            }
+            if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_password'])) {
+            changed['urllib3_proxy_kwargs_password'] = changed['urllib3_proxy_kwargs_password']
             }
             if (!Ext.isEmpty(changed['cat1'])) {
             changed['cat1'] = changed['cat1'];
