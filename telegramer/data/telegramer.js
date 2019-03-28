@@ -161,13 +161,13 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         fieldset = this.add({
             xtype: 'fieldset',
-            title: _('Proxy config'),
+            title: _('Proxy Configuration'),
             autoHeight: true,
             autoWidth: true,
             defaultType: 'textfield'
         });
         this.opts.bind('proxy_url', fieldset.add({
-            fieldLabel: _('Proxy url'),
+            fieldLabel: _('Proxy URL'),
             anchor: '100%',
             autoWidth: true,
             name: 'proxy_url'
