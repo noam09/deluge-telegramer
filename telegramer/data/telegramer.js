@@ -192,7 +192,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
 
     teleReload: function() {
         this.onApply();
-        deluge.client.telegramer.restart_telegram();
+        deluge.client.telegramer.restart_telegramer();
     },
 
     onPreferencesShow: function () {
