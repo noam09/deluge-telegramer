@@ -62,14 +62,13 @@ In addition to Categories, you can use the built-in Label plugin to label torren
 Want to contribute? Great!
 
 If you have any suggestions for improvement or new features you think might help others, posting Issues and Pull Requests are always welcome.
-If you'd like to help out, the next big goal is full support for Windows systems.
 
 **Issues** can be reported on the GitHub [issue tracker](http://github.com/noam09/deluge-telegramer/issues),
 just make sure to post the issue with a clear title, description and a log snippet if you know how. Remember to close your issue once it's solved, and if you found the solution yourself, please comment so that others benefit from it.
 
 **Feature requests** can also be posted on the GitHub [issue tracker](http://github.com/noam09/deluge-telegramer/issues).
 
-**Support** the project by implementing new features, solving support tickets and providing bug fixes.
+**Support** the project by implementing new features, solving support tickets and providing bug fixes. Please do so by forking the [develop](https://github.com/noam09/deluge-telegramer/tree/develop) branch.
 
 ## Screenshots
 
@@ -130,4 +129,5 @@ Once the download is complete, you may choose to receive a Telegram notification
 * Currently none, please post any issues you find on the [issue tracker](http://github.com/noam09/deluge-telegramer/issues).
 
 ## License
+
 This is free software under the GPL v3 open source license. Feel free to do with it what you wish, but any modification must be open sourced. A copy of the license is included.
