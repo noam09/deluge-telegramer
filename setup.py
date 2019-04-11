@@ -1,7 +1,7 @@
 #
 # setup.py
 #
-# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
 # https://github.com/noam09
 #
 # Package inclusion method thanks to YaRSS2 developers
@@ -46,7 +46,7 @@ from setuptools import setup, find_packages
 __plugin_name__ = "Telegramer"
 __author__ = "Noam"
 __author_email__ = "noamgit@gmail.com"
-__version__ = "1.1.7.5"
+__version__ = "1.2.1"
 __url__ = "https://github.com/noam09"
 __license__ = "GPLv3"
 __description__ = "Control Deluge using Telegram"
