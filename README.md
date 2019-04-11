@@ -57,8 +57,8 @@ Alternatively, you may also enter a new or different directory to which you'd li
 **Labels:**
 In addition to Categories, you can use the built-in Label plugin to label torrents using existing labels or by creating a new label.
 
-**Proxy**
-Telegram bot can also work behind a proxy. Proxy url look like: `http://PROXY_HOST:PROXY_PORT/` or `socks5://URL_OF_THE_PROXY_SERVER:PROXY_PORT` with optional authentication.
+**Proxy:**
+The Telegram bot can also direct all traffic through a proxy. Proxy addresses should use the format: `protocol://PROXY_HOST:PROXY_PORT`, e.g. `socks5://127.0.0.1:9051`. Proxy settings may also accept optional authentication (username and password).
 
 ## Development
 
@@ -128,9 +128,28 @@ Once the download is complete, you may choose to receive a Telegram notification
 
 ![preview thumb](http://i.imgur.com/CRdBwJa.jpg)
 
+You can also add new filters to YaRSS2 to make automatic downloading of torrents from RSS feeds much easier.
+Telegramer example configuration:
+
+![preview thumb](https://i.imgur.com/dMBgWuC.png)
+
+YaRSS2 example configuration:
+
+![preview thumb](https://i.imgur.com/K3vwVs7.png)
+
+Adding a new RSS download filter via chat:
+
+![preview thumb](https://i.imgur.com/BZDZC6W.jpg)
+
+Filter added:
+
+![preview thumb](https://i.imgur.com/4E8P0VD.png)
+
+
 ## Known Issues
 
 * Currently none, please post any issues you find on the [issue tracker](http://github.com/noam09/deluge-telegramer/issues),.
 
 ## License
+
 This is free software under the GPL v3 open source license. Feel free to do with it what you wish, but any modification must be open sourced. A copy of the license is included.
