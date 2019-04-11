@@ -3,7 +3,7 @@ Script: telegramer.js
     The client-side javascript code for the Telegramer plugin.
 
 Copyright:
-    (C) Noam 2016-2017 <noamgit@gmail.com>
+    Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
     https://github.com/noam09
 
     Much credit to:

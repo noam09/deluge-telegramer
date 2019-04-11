@@ -1,7 +1,8 @@
 #
 # common.py
 #
-# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
+# https://github.com/noam09
 #
 # Basic plugin template created by:
 # Copyright (C) 2008 Martijn Voncken <mvoncken@gmail.com>
@@ -36,9 +37,6 @@
 #    this exception statement from your version. If you delete this exception
 #    statement from all source files in the program, then also delete it here.
 #
-
-
-REGEX_TMPL_FILE_NAME = 'NAME'
 
 
 def get_resource(filename):

@@ -1,7 +1,8 @@
 #
 # __init__.py
 #
-# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
+# https://github.com/noam09
 #
 # Package inclusion method thanks to YaRSS2 developers
 # Copyright (C) 2012-2015 bendikro bro.devel+yarss2@gmail.com

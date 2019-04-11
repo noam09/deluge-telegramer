@@ -1,7 +1,7 @@
 #
 # gtkui.py
 #
-# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
 # https://github.com/noam09
 #
 # Basic plugin template created by:
@@ -47,12 +47,14 @@ except Exception as e:
 try:
     import gtk
     import deluge.common
-    from common import get_resource, REGEX_TMPL_FILE_NAME
+    from common import get_resource
     from deluge.ui.client import client
     import deluge.component as component
     from deluge.plugins.pluginbase import GtkPluginBase
 except ImportError as e:
     log.error('Telegramer: Import error - %s', str(e))
+
+REGEX_SUBS_WORD = "NAME"
 
 
 class GtkUI(GtkPluginBase):
@@ -81,30 +83,30 @@ class GtkUI(GtkPluginBase):
             "telegram_user": self.glade.get_widget("telegram_user").get_text(),
             "telegram_users": self.glade.get_widget("telegram_users").get_text(),
             "telegram_users_notify": self.glade.get_widget("telegram_users_notify").get_text(),
-            "categories": {self.glade.get_widget("cat1").get_text():
-                             self.glade.get_widget("dir1").get_text(),
-                         self.glade.get_widget("cat2").get_text():
-                             self.glade.get_widget("dir2").get_text(),
-                         self.glade.get_widget("cat3").get_text():
-                             self.glade.get_widget("dir3").get_text()
-                         },
-            "regex_exp": {self.glade.get_widget("rname1").get_text():
-                               self.glade.get_widget("reg1").get_text(),
-                          self.glade.get_widget("rname2").get_text():
-                              self.glade.get_widget("reg2").get_text(),
-                          self.glade.get_widget("rname3").get_text():
-                              self.glade.get_widget("reg3").get_text()
-                           },
             "proxy_url": self.glade.get_widget("proxy_url").get_text(),
             "urllib3_proxy_kwargs_username": self.glade.get_widget("urllib3_proxy_kwargs_username").get_text(),
-            "urllib3_proxy_kwargs_password": self.glade.get_widget("urllib3_proxy_kwargs_password").get_text()
-        }
-        #log.error(config)
+            "urllib3_proxy_kwargs_password": self.glade.get_widget("urllib3_proxy_kwargs_password").get_text(),
+            "categories": {self.glade.get_widget("cat1").get_text():
+                           self.glade.get_widget("dir1").get_text(),
+                           self.glade.get_widget("cat2").get_text():
+                           self.glade.get_widget("dir2").get_text(),
+                           self.glade.get_widget("cat3").get_text():
+                           self.glade.get_widget("dir3").get_text()
+                           },
+            "regex_exp": {self.glade.get_widget("rname1").get_text():
+                          self.glade.get_widget("reg1").get_text(),
+                          self.glade.get_widget("rname2").get_text():
+                          self.glade.get_widget("reg2").get_text(),
+                          self.glade.get_widget("rname3").get_text():
+                          self.glade.get_widget("reg3").get_text()
+                          }
+            }
+
         client.telegramer.set_config(config)
         for ind, (n, r) in enumerate(config["regex_exp"].items()):
-            if REGEX_TMPL_FILE_NAME not in r:
-                log.error("Your regex " + n + "template doesn't contains "
-                          + REGEX_TMPL_FILE_NAME + " string and wouldn't work")
+            if REGEX_SUBS_WORD not in r:
+                log.error("Your regex " + n + " template does not contain the "
+                          + REGEX_SUBS_WORD + " keyword")
                 break
 
     def on_show_prefs(self):
@@ -118,19 +120,18 @@ class GtkUI(GtkPluginBase):
         self.glade.get_widget("telegram_user").set_text(config["telegram_user"])
         self.glade.get_widget("telegram_users").set_text(config["telegram_users"])
         self.glade.get_widget("telegram_users_notify").set_text(config["telegram_users_notify"])
-
-        for ind, (c, d) in enumerate(config["categories"].items()):
-            self.glade.get_widget("cat"+str(ind+1)).set_text(c)
-            self.glade.get_widget("dir"+str(ind+1)).set_text(d)
-
-        for ind, (n, r) in enumerate(config["regex_exp"].items()):
-            self.glade.get_widget("rname"+str(ind+1)).set_text(n)
-            self.glade.get_widget("reg"+str(ind+1)).set_text(r)
-
+        # Proxy
         self.glade.get_widget("proxy_url").set_text(config["proxy_url"]),
         self.glade.get_widget('urllib3_proxy_kwargs_username').set_text(config["urllib3_proxy_kwargs_username"]),
         self.glade.get_widget("urllib3_proxy_kwargs_password").set_text(config["urllib3_proxy_kwargs_password"]),
-
+        # Categories
+        for ind, (c, d) in enumerate(config["categories"].items()):
+            self.glade.get_widget("cat"+str(ind+1)).set_text(c)
+            self.glade.get_widget("dir"+str(ind+1)).set_text(d)
+        # RSS
+        for ind, (n, r) in enumerate(config["regex_exp"].items()):
+            self.glade.get_widget("rname"+str(ind+1)).set_text(n)
+            self.glade.get_widget("reg"+str(ind+1)).set_text(r)
 
     def on_button_test_clicked(self, Event=None):
         client.telegramer.telegram_do_test()
