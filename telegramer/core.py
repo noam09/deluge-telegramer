@@ -66,6 +66,7 @@ try:
     from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot)
     from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                               RegexHandler, ConversationHandler)
+    from telegram.utils.request import Request
     import threading
     from base64 import b64encode
     from time import strftime, sleep
@@ -92,8 +93,10 @@ DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a ne
                  "telegram_users_notify":    "Contact @MyIDbot",
                  "telegram_notify_finished": True,
                  "telegram_notify_added":    True,
-                 "categories": {}
-                 }
+                 "proxy_url":                "",
+                 'urllib3_proxy_kwargs_username': "",
+                 "urllib3_proxy_kwargs_password": "",
+                 "categories": {}}
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
            '(KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
@@ -248,10 +251,17 @@ class Core(CorePluginBase):
                         log.debug(prelog() + 'Notify: ' + str(self.notifylist))
 
                 reactor.callLater(2, self.connect_events)
-
-                self.bot = Bot(self.config['telegram_token'])
+                REQUEST_KWARGS = {
+                    'proxy_url': self.config['proxy_url'],
+                    'urllib3_proxy_kwargs': {
+                        'username': self.config['urllib3_proxy_kwargs_username'],
+                        'password': self.config['urllib3_proxy_kwargs_password'],
+                    }
+                }
+                bot_request = Request(**REQUEST_KWARGS)
+                self.bot = Bot(self.config['telegram_token'], request=bot_request)
                 # Create the EventHandler and pass it bot's token.
-                self.updater = Updater(self.config['telegram_token'])
+                self.updater = Updater(self.config['telegram_token'], request_kwargs=REQUEST_KWARGS)
                 # Get the dispatcher to register handlers
                 dp = self.updater.dispatcher
                 # Add conversation handler with the different states

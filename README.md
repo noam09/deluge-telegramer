@@ -57,6 +57,9 @@ Alternatively, you may also enter a new or different directory to which you'd li
 **Labels:**
 In addition to Categories, you can use the built-in Label plugin to label torrents using existing labels or by creating a new label.
 
+**Proxy**
+Telegram bot can also work behind a proxy. Proxy url look like: `http://PROXY_HOST:PROXY_PORT/` or `socks5://URL_OF_THE_PROXY_SERVER:PROXY_PORT` with optional authentication.
+
 ## Development
 
 Want to contribute? Great!

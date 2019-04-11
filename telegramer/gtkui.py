@@ -94,7 +94,10 @@ class GtkUI(GtkPluginBase):
                               self.glade.get_widget("reg2").get_text(),
                           self.glade.get_widget("rname3").get_text():
                               self.glade.get_widget("reg3").get_text()
-                           }
+                           },
+            "proxy_url": self.glade.get_widget("proxy_url").get_text(),
+            "urllib3_proxy_kwargs_username": self.glade.get_widget("urllib3_proxy_kwargs_username").get_text(),
+            "urllib3_proxy_kwargs_password": self.glade.get_widget("urllib3_proxy_kwargs_password").get_text()
         }
         #log.error(config)
         client.telegramer.set_config(config)
@@ -123,6 +126,11 @@ class GtkUI(GtkPluginBase):
         for ind, (n, r) in enumerate(config["regex_exp"].items()):
             self.glade.get_widget("rname"+str(ind+1)).set_text(n)
             self.glade.get_widget("reg"+str(ind+1)).set_text(r)
+
+        self.glade.get_widget("proxy_url").set_text(config["proxy_url"]),
+        self.glade.get_widget('urllib3_proxy_kwargs_username').set_text(config["urllib3_proxy_kwargs_username"]),
+        self.glade.get_widget("urllib3_proxy_kwargs_password").set_text(config["urllib3_proxy_kwargs_password"]),
+
 
     def on_button_test_clicked(self, Event=None):
         client.telegramer.telegram_do_test()
