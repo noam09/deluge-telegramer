@@ -38,6 +38,7 @@
 #    statement from all source files in the program, then also delete it here.
 #
 
+
 try:
     from deluge.log import LOG as log
 except Exception as e:
@@ -46,7 +47,7 @@ except Exception as e:
 try:
     import gtk
     import deluge.common
-    from common import get_resource
+    from common import get_resource, REGEX_TMPL_FILE_NAME
     from deluge.ui.client import client
     import deluge.component as component
     from deluge.plugins.pluginbase import GtkPluginBase
@@ -80,17 +81,31 @@ class GtkUI(GtkPluginBase):
             "telegram_user": self.glade.get_widget("telegram_user").get_text(),
             "telegram_users": self.glade.get_widget("telegram_users").get_text(),
             "telegram_users_notify": self.glade.get_widget("telegram_users_notify").get_text(),
+            "categories": {self.glade.get_widget("cat1").get_text():
+                             self.glade.get_widget("dir1").get_text(),
+                         self.glade.get_widget("cat2").get_text():
+                             self.glade.get_widget("dir2").get_text(),
+                         self.glade.get_widget("cat3").get_text():
+                             self.glade.get_widget("dir3").get_text()
+                         },
+            "regex_exp": {self.glade.get_widget("rname1").get_text():
+                               self.glade.get_widget("reg1").get_text(),
+                          self.glade.get_widget("rname2").get_text():
+                              self.glade.get_widget("reg2").get_text(),
+                          self.glade.get_widget("rname3").get_text():
+                              self.glade.get_widget("reg3").get_text()
+                           },
             "proxy_url": self.glade.get_widget("proxy_url").get_text(),
             "urllib3_proxy_kwargs_username": self.glade.get_widget("urllib3_proxy_kwargs_username").get_text(),
-            "urllib3_proxy_kwargs_password": self.glade.get_widget("urllib3_proxy_kwargs_password").get_text(),
-            "cat1": self.glade.get_widget("cat1").get_text(),
-            "dir1": self.glade.get_widget("dir1").get_text(),
-            "cat2": self.glade.get_widget("cat2").get_text(),
-            "dir2": self.glade.get_widget("dir2").get_text(),
-            "cat3": self.glade.get_widget("cat3").get_text(),
-            "dir3": self.glade.get_widget("dir3").get_text()
+            "urllib3_proxy_kwargs_password": self.glade.get_widget("urllib3_proxy_kwargs_password").get_text()
         }
+        #log.error(config)
         client.telegramer.set_config(config)
+        for ind, (n, r) in enumerate(config["regex_exp"].items()):
+            if REGEX_TMPL_FILE_NAME not in r:
+                log.error("Your regex " + n + "template doesn't contains "
+                          + REGEX_TMPL_FILE_NAME + " string and wouldn't work")
+                break
 
     def on_show_prefs(self):
         client.telegramer.get_config().addCallback(self.cb_get_config)
@@ -103,15 +118,19 @@ class GtkUI(GtkPluginBase):
         self.glade.get_widget("telegram_user").set_text(config["telegram_user"])
         self.glade.get_widget("telegram_users").set_text(config["telegram_users"])
         self.glade.get_widget("telegram_users_notify").set_text(config["telegram_users_notify"])
+
+        for ind, (c, d) in enumerate(config["categories"].items()):
+            self.glade.get_widget("cat"+str(ind+1)).set_text(c)
+            self.glade.get_widget("dir"+str(ind+1)).set_text(d)
+
+        for ind, (n, r) in enumerate(config["regex_exp"].items()):
+            self.glade.get_widget("rname"+str(ind+1)).set_text(n)
+            self.glade.get_widget("reg"+str(ind+1)).set_text(r)
+
         self.glade.get_widget("proxy_url").set_text(config["proxy_url"]),
         self.glade.get_widget('urllib3_proxy_kwargs_username').set_text(config["urllib3_proxy_kwargs_username"]),
         self.glade.get_widget("urllib3_proxy_kwargs_password").set_text(config["urllib3_proxy_kwargs_password"]),
-        self.glade.get_widget("cat1").set_text(config["cat1"])
-        self.glade.get_widget("dir1").set_text(config["dir1"])
-        self.glade.get_widget("cat2").set_text(config["cat2"])
-        self.glade.get_widget("dir2").set_text(config["dir2"])
-        self.glade.get_widget("cat3").set_text(config["cat3"])
-        self.glade.get_widget("dir3").set_text(config["dir3"])
+
 
     def on_button_test_clicked(self, Event=None):
         client.telegramer.telegram_do_test()

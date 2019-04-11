@@ -38,6 +38,9 @@
 #
 
 
+REGEX_TMPL_FILE_NAME = 'NAME'
+
+
 def get_resource(filename):
     import pkg_resources
     import os

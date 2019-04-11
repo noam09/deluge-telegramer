@@ -46,7 +46,6 @@
 import os
 import logging
 import traceback
-from time import strftime
 from deluge.log import LOG as log
 
 # import sys
@@ -54,7 +53,7 @@ from deluge.log import LOG as log
 # sys.setdefaultencoding('utf8')
 
 #############################
-# log.setLevel(logging.DEBUG)
+log.setLevel(logging.DEBUG)
 #############################
 
 
@@ -85,7 +84,8 @@ try:
 except ImportError as e:
     log.error(prelog() + 'Import error - %s\n%s' % (str(e), traceback.format_exc()))
 
-CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL = range(6)
+CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, TOR_OR_RSS, RSS_FEED, FILE_NAME, \
+REGEX = range(10)
 
 DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a new bot",
                  "telegram_user":            "Contact @MyIDbot",
@@ -96,12 +96,7 @@ DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a ne
                  "proxy_url":                "",
                  'urllib3_proxy_kwargs_username': "",
                  "urllib3_proxy_kwargs_password": "",
-                 "dir1":                     "",
-                 "cat1":                     "",
-                 "dir2":                     "",
-                 "cat2":                     "",
-                 "dir3":                     "",
-                 "cat3":                     ""}
+                 "categories": {}}
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
            '(KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
@@ -119,10 +114,13 @@ EMOJI = {'seeding':     u'\u23eb',
          'error':       u'\u2757\ufe0f',
          'downloading': u'\u23ec'}
 
+REGEX_SUBS_WORD = "NAME"
+
 STRINGS = {'no_label': 'No Label',
            'no_category': 'Use Default Settings',
            'cancel': 'Send /cancel at any time to abort',
            'test_success': 'It works!',
+           'torrent_or_rss': 'What you wish to add ?',
            'which_cat': 'Which category/directory?\nRemember to quote ' +
                         'directory paths ("/path/to/dir")',
            'which_label': 'Which label?',
@@ -137,7 +135,16 @@ STRINGS = {'no_label': 'No Label',
            'not_file': 'Aw man... That\'s not a torrent file',
            'not_url': 'Aw man... Bad link',
            'download_fail': 'Aw man... Download failed',
-           'no_items': 'No items'}
+           'no_items': 'No items',
+           "torrent":'Torrent',
+           "rss":"RSS",
+           "which_rss_feed":'Which RSS feed?',
+           "which_regex":'Which ReGex template to use?',
+           "no_rss_found":'No RSS feeds found - exiting',
+           "file_name":'What is the movie name?',
+           "noNAME":'The regex you choose dosn\'t contains \'' + REGEX_SUBS_WORD +
+                    '\' sequence - please choose another',
+           "no_regex":'No regex found - exiting'}
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
@@ -186,9 +193,14 @@ def format_torrent_info(torrent):
 
 class Core(CorePluginBase):
     def __init__(self, *args):
-        self.core = component.get('Core')
+        self.opts = {}
         self.bot = None
         self.updater = None
+        self.isRss = False
+        self.yarss_data = YarssData()
+        self.yarss_config = None
+        self.yarss_plugin = None
+
         log.debug(prelog() + 'Initialize class')
         super(Core, self).__init__(*args)
 
@@ -199,7 +211,6 @@ class Core(CorePluginBase):
                                                              DEFAULT_PREFS)
             self.whitelist = []
             self.notifylist = []
-            self.set_dirs = {}
             self.label = None
             self.COMMANDS = {'list':        self.cmd_list,
                              'down':        self.cmd_down,
@@ -262,7 +273,11 @@ class Core(CorePluginBase):
                         TORRENT_TYPE: [MessageHandler(Filters.text, self.torrent_type)],
                         ADD_MAGNET: [MessageHandler(Filters.text, self.add_magnet)],
                         ADD_TORRENT: [MessageHandler(Filters.document, self.add_torrent)],
-                        ADD_URL: [MessageHandler(Filters.text, self.add_url)]
+                        ADD_URL: [MessageHandler(Filters.text, self.add_url)],
+                        TOR_OR_RSS: [MessageHandler(Filters.text, self.tor_or_rss)],
+                        RSS_FEED: [MessageHandler(Filters.text, self.rss_feed)],
+                        REGEX: [MessageHandler(Filters.text, self.regex)],
+                        FILE_NAME: [MessageHandler(Filters.text, self.rss_file_name)]
                     },
                     fallbacks=[CommandHandler('cancel', self.cancel)]
                 )
@@ -287,6 +302,7 @@ class Core(CorePluginBase):
                 #######################################################################
                 # Start the Bot
                 self.updater.start_polling(poll_interval=0.05)
+
 
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
@@ -377,6 +393,8 @@ class Core(CorePluginBase):
                      % str(update.message.chat.id))
             update.message.reply_text('Operation cancelled',
                                       reply_markup=ReplyKeyboardRemove())
+            self.isRss = False
+            self.yarss_data.clear()
             return ConversationHandler.END
 
     def cmd_help(self, bot, update):
@@ -431,72 +449,100 @@ class Core(CorePluginBase):
     def add(self, bot, update):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
-            try:
-                self.set_dirs = {}
-                self.opts = {}
-                keyboard_options = []
-                """Currently there are 3 possible categories so
-                loop through cat1-3 and dir1-3, check if directories exist
-                """
-                for i in range(3):
-                    i = i+1
-                    if os.path.isdir(self.config['dir'+str(i)]):
-                        log.debug(prelog() + self.config['cat'+str(i)] +
-                                  ' ' + self.config['dir'+str(i)])
-                        self.set_dirs[self.config['cat'+str(i)]] = \
-                            self.config['dir'+str(i)]
+            if "YaRSS2" in component.get('Core').get_available_plugins():
+                return self.prepare_torrents_or_rss(bot, update)
+            else:
+                return self.prepare_categoies(bot, update)
 
-                if self.set_dirs:
-                    for k in self.set_dirs.keys():
-                        log.debug(prelog() + k)
-                        keyboard_options.append([k])
-                keyboard_options.append([STRINGS['no_category']])
+    def prepare_torrents_or_rss(self, bot, update):
+        try:
+            keyboard_options = [[STRINGS['torrent']], [STRINGS['rss']]]
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['torrent_or_rss'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                 one_time_keyboard=True))
+            return TOR_OR_RSS
 
-                update.message.reply_text(
-                    '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-                return CATEGORY
+    def tor_or_rss(self, bot, update):
+        try:
+            if str(update.message.chat.id) not in self.whitelist:
+                return
 
-            except Exception as e:
-                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+            if STRINGS['torrent'] == update.message.text:
+                return self.prepare_categoies(bot, update)
+
+            if STRINGS['rss'] == update.message.text:
+                return self.add_rss(bot, update)
+
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def prepare_categoies(self, bot, update):
+        try:
+            keyboard_options = []
+            filtered_dict = {c: d for c, d in self.config["categories"].iteritems() if os.path.isdir(d)}
+            for c, d in filtered_dict.iteritems():
+                log.error(prelog() + c + ' : ' + d)
+                keyboard_options.append([c])
+
+            keyboard_options.append([STRINGS['no_category']])
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                 one_time_keyboard=True))
+            return CATEGORY
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+
+    def prepare_torrent_type(self, update):
+        # Request torrent type
+        keyboard_options = []
+        keyboard_options.append(['Magnet'])
+        keyboard_options.append(['.torrent'])
+        keyboard_options.append(['URL'])
+
+        update.message.reply_text(
+            STRINGS['what_kind'],
+            reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                             one_time_keyboard=True))
+        return TORRENT_TYPE
 
     def category(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             try:
-                if update.message.text == '/add' or \
-                   update.message.text == STRINGS['no_category']:
+                if STRINGS['no_category'] == update.message.text:
                     self.opts = {}
                 else:
-                    for i in range(3):
-                        i = i+1
-                        if self.config['cat'+str(i)] == update.message.text:
-                            cat_id = str(i)
-                            # move_completed_path vs download_location
-                            self.opts = {'move_completed_path':
-                                         self.config['dir'+cat_id],
-                                         'move_completed': True}
-                    # If none of the existing categories were selected,
-                    # maybe user is trying to save to a new directory
-                    if not self.opts:
-                        try:
-                            log.debug(prelog() + 'Custom directory entered: ' +
-                                      str(update.message.text))
-                            if update.message.text[0] == '"' and \
-                               update.message.text[-1] == '"':
-                                otherpath = os.path.abspath(os.path.realpath(
-                                    update.message.text[1:-1]))
-                                log.debug(prelog() +
-                                          'Attempt to create and save to: ' +
-                                          str(otherpath))
-                                if not os.path.exists(otherpath):
-                                    os.makedirs(otherpath)
-                                self.opts = {'move_completed_path': otherpath,
-                                             'move_completed': True}
-                        except Exception as e:
-                            log.error(prelog() + str(e) + '\n' +
-                                      traceback.format_exc())
+                    if update.message.text in self.config["categories"].keys():
+                        # move_completed_path vs download_location
+                        self.opts = {'move_completed_path':
+                                         self.config["categories"][update.message.text],
+                                     'move_completed': True}
+
+                        # If none of the existing categories were selected,
+                        # maybe user is trying to save to a new directory
+                        if not self.opts:
+                            try:
+                                log.debug(prelog() + 'Custom directory entered: ' +
+                                          str(update.message.text))
+                                if update.message.text[0] == '"' and \
+                                        update.message.text[-1] == '"':
+                                    otherpath = os.path.abspath(os.path.realpath(
+                                        update.message.text[1:-1]))
+                                    log.debug(prelog() +
+                                              'Attempt to create and save to: ' +
+                                              str(otherpath))
+                                    if not os.path.exists(otherpath):
+                                        os.makedirs(otherpath)
+                                    self.opts = {'move_completed_path': otherpath,
+                                                 'move_completed': True}
+                            except Exception as e:
+                                log.error(prelog() + str(e) + '\n' +
+                                          traceback.format_exc())
 
                 keyboard_options = []
                 self.label = None
@@ -509,19 +555,111 @@ class Core(CorePluginBase):
                             keyboard_options.append([g])
                 except Exception as e:
                     log.debug(prelog() + 'Enabling Label plugin failed')
-                    log.error(prelog() + str(e) + '\n' +
-                              traceback.format_exc())
-                keyboard_options.append([STRINGS['no_label']])
+                    log.error(prelog() + str(e) + '\n' +traceback.format_exc())
 
-                update.message.reply_text(
-                    STRINGS['which_label'],
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
+                if len(keyboard_options) > 0:
+                    keyboard_options.append([STRINGS['no_label']])
 
-                return SET_LABEL
+                    update.message.reply_text(
+                        STRINGS['which_label'],
+                        reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                         one_time_keyboard=True))
+                    return SET_LABEL
+                else:
+                    if self.isRss:
+                        return self.prepare_rss_feed(bot, update)
+                    else:
+                        return self.prepare_torrent_type(update)
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def prepare_rss_feed(self, bot, update):
+
+        if self.yarss_plugin is None:
+            self.yarss_plugin = component.get('CorePlugin.YaRSS2')
+        if self.yarss_plugin:
+            self.yarss_config = self.yarss_plugin.get_config()
+            keyboard_options = [[rss_feed["name"]] for rss_feed in self.yarss_config["rssfeeds"].values()]
+            # if no rss_feeds found
+            if not bool(keyboard_options):
+                log.debug(prelog() + STRINGS['no_rss_found'])
+                update.message.reply_text('%s' % (STRINGS['no_rss_found']),
+                                          reply_markup=ReplyKeyboardMarkup([],one_time_keyboard=True))
+                return ConversationHandler.END
+
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['which_rss_feed'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options,one_time_keyboard=True))
+
+            return RSS_FEED
+        return ConversationHandler.END
+
+    def rss_feed(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+        self.isRss = True
+        rss_feed = next(rss_feed for rss_feed in self.yarss_config["rssfeeds"].values()
+                            if rss_feed["name"] == update.message.text)
+
+        self.yarss_data.subscription_data["rssfeed_key"] = rss_feed["key"]
+        log.debug(prelog() + 'user choose rss_feed' + rss_feed["name"])
+
+        keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys() if  regex_name != '']
+
+        if not bool(keyboard_options):
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['no_regex'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup([], one_time_keyboard=True))
+            return ConversationHandler.END
+
+        update.message.reply_text(
+            '%s\n%s' % (STRINGS['which_regex'], STRINGS['cancel']),
+            reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+        return REGEX
+
+    def regex(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+        if REGEX_SUBS_WORD in self.config["regex_exp"][update.message.text]:
+            self.yarss_data.subscription_data["regex_include"] = self.config["regex_exp"][update.message.text]
+
+            log.debug(prelog() + 'user choose regex ' + update.message.text)
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['file_name'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup([],one_time_keyboard=True))
+            return FILE_NAME
+        else:
+            keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys()]
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['noNAME'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+            return REGEX
+
+
+    def rss_file_name(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+
+        log.debug(prelog() + update.message.text)
+        update.message.text = re.sub(' +', ' ', update.message.text)
+
+        self.yarss_data.subscription_data["regex_include"] = re.sub(r"NAME", update.message.text,
+                                                                    self.yarss_data.subscription_data["regex_include"])
+        self.yarss_data.subscription_data["regex_include"] = re.sub(r" ", ".*",
+                                                                    self.yarss_data.subscription_data["regex_include"])
+        log.debug(prelog() + "Adding Regex " + self.yarss_data.subscription_data["regex_include"])
+
+        self.yarss_data.subscription_data["label"] = self.label
+        self.yarss_data.subscription_data["name"] = update.message.text
+        if self.opts is not None:
+            self.yarss_data.subscription_data["download_location"] = self.opts["move_completed_path"]
+
+        self.yarss_data.addRss()
+        update.message.reply_text(
+            '%s' % (STRINGS['added']),
+            reply_markup=ReplyKeyboardMarkup([], one_time_keyboard=True))
+        return ConversationHandler.END
 
     def set_label(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
@@ -532,16 +670,11 @@ class Core(CorePluginBase):
                 log.debug(prelog() + "Label: %s" % (update.message.text))
 
                 # Request torrent type
-                keyboard_options = []
-                keyboard_options.append(['Magnet'])
-                keyboard_options.append(['.torrent'])
-                keyboard_options.append(['URL'])
+                if self.isRss:
+                    return self.prepare_rss_feed(bot, update)
+                else:
+                    return self.prepare_torrent_type(update)
 
-                update.message.reply_text(
-                    STRINGS['what_kind'],
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
-                return TORRENT_TYPE
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -594,7 +727,7 @@ class Core(CorePluginBase):
                         log.debug(prelog() + 'Adding torrent from magnet ' +
                                   'URI `%s` using options `%s` ...',
                                   metainfo, self.opts)
-                        tid = self.core.add_torrent_magnet(metainfo, self.opts)
+                        tid =component.get('Core').add_torrent_magnet(metainfo, self.opts)
                         self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['not_magnet'],
@@ -628,7 +761,7 @@ class Core(CorePluginBase):
                             self.opts = {}
                         log.info(prelog() + 'Adding torrent from base64 string' +
                                  'using options `%s` ...', self.opts)
-                        tid = self.core.add_torrent_file(None, metainfo, self.opts)
+                        tid =component.get('Core').add_torrent_file(None, metainfo, self.opts)
                         self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['download_fail'],
@@ -662,7 +795,7 @@ class Core(CorePluginBase):
                                 self.opts = {}
                             log.info(prelog() + 'Adding torrent from base64 string' +
                                      'using options `%s` ...', self.opts)
-                            tid = self.core.add_torrent_file(None, metainfo, self.opts)
+                            tid =component.get('Core').add_torrent_file(None, metainfo, self.opts)
                             self.apply_label(tid)
                         else:
                             update.message.reply_text(STRINGS['download_fail'],
@@ -679,6 +812,14 @@ class Core(CorePluginBase):
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def add_rss(self, bot, update):
+        try:
+            component.get('Core').enable_plugin('YaRSS2')
+            self.isRss = True
+            return self.prepare_categoies(bot, update)
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
     def apply_label(self, tid):
         try:
@@ -753,9 +894,11 @@ class Core(CorePluginBase):
         log.debug(prelog() + 'Set config')
         dirty = False
         for key in config.keys():
-            if self.config[key] != config[key]:
+            if ("categories" == key and cmp(self.config[key], config[key])) or \
+                    self.config[key] != config[key]:
                 dirty = True
                 self.config[key] = config[key]
+
         if dirty:
             log.info(prelog() + 'Config changed, reloading')
             self.config.save()
@@ -783,3 +926,39 @@ class Core(CorePluginBase):
         self.bot.sendSticker(self.config['telegram_user'],
                              choice(list(STICKERS.values())))
         self.telegram_send(STRINGS['test_success'])
+
+
+class YarssData:
+
+    def __init__(self):
+        self.subscription_data = {}
+        self.subscription_data["regex_exclude"] = ""
+        self.subscription_data["regex_include_ignorecase"] = True
+        self.subscription_data["regex_exclude_ignorecase"] = False
+        self.subscription_data["custom_text_lines"] = ""
+        self.subscription_data["last_match"] = ""
+        self.subscription_data["ignore_timestamp"] = False
+        self.subscription_data["active"] = True
+        self.subscription_data["max_download_speed"] = -2
+        self.subscription_data["max_upload_speed"] = -2
+        self.subscription_data["max_connections"] = -2
+        self.subscription_data["max_upload_slots"] = -2
+        self.subscription_data["add_torrents_in_paused_state"] = "Default"
+        self.subscription_data["auto_managed"] = "Default"
+        self.subscription_data["sequential_download"] = "Default"
+        self.subscription_data["prioritize_first_last_pieces"] = "Default"
+        # Get notifications from notifications list
+        self.subscription_data["email_notifications"] = {}
+        self.subscription_data["move_completed"] = ""
+        self.clear()
+
+    def clear(self):
+        self.subscription_data["name"] = ""
+        self.subscription_data["label"] = ""
+        self.subscription_data["rssfeed_key"] = ""
+        self.subscription_data["regex_include"] = ""
+        self.subscription_data["download_location"] = ""
+
+    def addRss(self):
+        self.yarss2_plugin = component.get('CorePlugin.YaRSS2')
+        self.yarss2_plugin.save_subscription(subscription_data=self.subscription_data, delete=False)
