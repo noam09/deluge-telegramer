@@ -131,19 +131,19 @@ Once the download is complete, you may choose to receive a Telegram notification
 You can also add new filters to YaRSS2 to make automatic downloading of torrents from RSS feeds much easier.
 Telegramer example configuration:
 
-![preview thumb](https://i.imgur.com/dMBgWuC.png)
+![preview thumb](https://i.imgur.com/dMBgWuC.png?2)
 
 YaRSS2 example configuration:
 
-![preview thumb](https://i.imgur.com/K3vwVs7.png)
+![preview thumb](https://i.imgur.com/K3vwVs7.png?2)
 
 Adding a new RSS download filter via chat:
 
-![preview thumb](https://i.imgur.com/BZDZC6W.jpg)
+![preview thumb](https://i.imgur.com/BZDZC6W.jpg?2)
 
 Filter added:
 
-![preview thumb](https://i.imgur.com/4E8P0VD.png)
+![preview thumb](https://i.imgur.com/4E8P0VD.png?2)
 
 
 ## Known Issues
