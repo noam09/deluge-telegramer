@@ -53,7 +53,7 @@ from deluge.log import LOG as log
 # sys.setdefaultencoding('utf8')
 
 #############################
-# log.setLevel(logging.DEBUG)
+log.setLevel(logging.DEBUG)
 #############################
 
 
@@ -344,39 +344,39 @@ class Core(CorePluginBase):
         pass
 
     def telegram_send(self, message, to=None, parse_mode=None):
-        if str(to) in self.whitelist:
-            if self.bot:
-                log.debug(prelog() + 'Send message')
-                if not to:
-                    to = self.config['telegram_user']
-                else:
-                    log.debug(prelog() + 'send_message, to set')
-                if not isinstance(to, (list,)):
-                    log.debug(prelog() + 'Convert to to list')
-                    to = [to]
-                log.debug(prelog() + "[to] " + str(to))
-                for usr in to:
-                    # Every outgoing message filtered here
-                    if str(usr) in self.whitelist or str(usr) in self.notifylist:
-                        log.debug(prelog() + "to: " + str(usr))
-                        if len(message) > 4096:
-                            log.debug(prelog() +
-                                      'Message length is {}'.format(str(len(message))))
-                            tmp = ''
-                            for line in message.split('\n'):
-                                tmp += line + '\n'
-                                if len(tmp) > 4000:
-                                    msg = self.bot.send_message(usr, tmp,
-                                                                parse_mode='Markdown')
-                                    tmp = ''
-                        else:
-                            if parse_mode:
-                                msg = self.bot.send_message(usr, message,
+        if self.bot:
+            log.debug(prelog() + 'Send message')
+            if not to:
+                log.debug(prelog() + '"to" not set')
+                to = self.config['telegram_user']
+            else:
+                log.debug(prelog() + 'send_message, to set')
+            if not isinstance(to, (list,)):
+                log.debug(prelog() + 'Convert to to list')
+                to = [to]
+            log.debug(prelog() + "[to] " + str(to))
+            for usr in to:
+                # Every outgoing message filtered here
+                if str(usr) in self.whitelist or str(usr) in self.notifylist:
+                    log.debug(prelog() + "to: " + str(usr))
+                    if len(message) > 4096:
+                        log.debug(prelog() +
+                                  'Message length is {}'.format(str(len(message))))
+                        tmp = ''
+                        for line in message.split('\n'):
+                            tmp += line + '\n'
+                            if len(tmp) > 4000:
+                                msg = self.bot.send_message(usr, tmp,
                                                             parse_mode='Markdown')
-                            else:
-                                msg = self.bot.send_message(usr, message)
-            log.debug(prelog() + 'return')
-            return
+                                tmp = ''
+                    else:
+                        if parse_mode:
+                            msg = self.bot.send_message(usr, message,
+                                                        parse_mode='Markdown')
+                        else:
+                            msg = self.bot.send_message(usr, message)
+        log.debug(prelog() + 'return')
+        return
 
     def telegram_poll_start(self):
         # Skip this - for testing only
@@ -836,8 +836,8 @@ class Core(CorePluginBase):
                     else:
                         update.message.reply_text(STRINGS['not_magnet'],
                                                   reply_markup=ReplyKeyboardRemove())
-                except Exception as e:
-                    log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+            except Exception as e:
+                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
                 return ConversationHandler.END
 
@@ -1054,7 +1054,7 @@ class Core(CorePluginBase):
         log.info(prelog() + 'Send test')
         self.bot.sendSticker(self.config['telegram_user'],
                              choice(list(STICKERS.values())))
-        self.telegram_send(STRINGS['test_success'])
+        self.telegram_send(STRINGS['test_success'], to=self.config['telegram_user'])
 
 
 class YarssData:
