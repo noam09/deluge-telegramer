@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2017
+# Copyright (C) 2015-2018
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 """This module contains an object that represents a Telegram Audio."""
 
-from telegram import TelegramObject
+from telegram import TelegramObject, PhotoSize
 
 
 class Audio(TelegramObject):
@@ -32,6 +32,9 @@ class Audio(TelegramObject):
         title (:obj:`str`): Optional. Title of the audio as defined by sender or by audio tags.
         mime_type (:obj:`str`): Optional. MIME type of the file as defined by sender.
         file_size (:obj:`int`): Optional. File size.
+        thumb (:class:`telegram.PhotoSize`): Optional. Thumbnail of the album cover to
+            which the music file belongs
+        bot (:class:`telegram.Bot`): Optional. The Bot to use for instance methods.
 
     Args:
         file_id (:obj:`str`): Unique identifier for this file.
@@ -41,6 +44,9 @@ class Audio(TelegramObject):
         title (:obj:`str`, optional): Title of the audio as defined by sender or by audio tags.
         mime_type (:obj:`str`, optional): MIME type of the file as defined by sender.
         file_size (:obj:`int`, optional): File size.
+        thumb (:class:`telegram.PhotoSize`, optional): Thumbnail of the album cover to
+            which the music file belongs
+        bot (:class:`telegram.Bot`, optional): The Bot to use for instance methods.
         **kwargs (:obj:`dict`): Arbitrary keyword arguments.
 
     """
@@ -52,6 +58,8 @@ class Audio(TelegramObject):
                  title=None,
                  mime_type=None,
                  file_size=None,
+                 thumb=None,
+                 bot=None,
                  **kwargs):
         # Required
         self.file_id = str(file_id)
@@ -61,6 +69,8 @@ class Audio(TelegramObject):
         self.title = title
         self.mime_type = mime_type
         self.file_size = file_size
+        self.thumb = thumb
+        self.bot = bot
 
         self._id_attrs = (self.file_id,)
 
@@ -69,4 +79,24 @@ class Audio(TelegramObject):
         if not data:
             return None
 
-        return cls(**data)
+        data['thumb'] = PhotoSize.de_json(data.get('thumb'), bot)
+
+        return cls(bot=bot, **data)
+
+    def get_file(self, timeout=None, **kwargs):
+        """Convenience wrapper over :attr:`telegram.Bot.get_file`
+
+        Args:
+            timeout (:obj:`int` | :obj:`float`, optional): If this value is specified, use it as
+                the read timeout from the server (instead of the one specified during creation of
+                the connection pool).
+            **kwargs (:obj:`dict`): Arbitrary keyword arguments.
+
+        Returns:
+            :class:`telegram.File`
+
+        Raises:
+            :class:`telegram.TelegramError`
+
+        """
+        return self.bot.get_file(self.file_id, timeout=timeout, **kwargs)

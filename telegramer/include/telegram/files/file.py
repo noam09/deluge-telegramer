@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2017
+# Copyright (C) 2015-2018
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,12 +17,14 @@
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 """This module contains an object that represents a Telegram File."""
+from base64 import b64decode
 from os.path import basename
 
-## REMREM from future.backports.urllib import parse as urllib_parse
+# REMREM from future.backports.urllib import parse as urllib_parse
 from urlparse import urlparse as urllib_parse
 
 from telegram import TelegramObject
+from telegram.passport.credentials import decrypt
 
 
 class File(TelegramObject):
@@ -46,6 +48,10 @@ class File(TelegramObject):
         bot (:obj:`telegram.Bot`, optional): Bot to use with shortcut method.
         **kwargs (:obj:`dict`): Arbitrary keyword arguments.
 
+    Note:
+        If you obtain an instance of this class from :attr:`telegram.PassportFile.get_file`,
+        then it will automatically be decrypted as it downloads when you call :attr:`download()`.
+
     """
 
     def __init__(self, file_id, bot=None, file_size=None, file_path=None, **kwargs):
@@ -57,6 +63,7 @@ class File(TelegramObject):
         self.file_path = file_path
 
         self.bot = bot
+        self._credentials = None
 
         self._id_attrs = (self.file_id,)
 
@@ -75,36 +82,75 @@ class File(TelegramObject):
         that object using the ``out.write`` method.
 
         Note:
-            `custom_path` and `out` are mutually exclusive.
+            :attr:`custom_path` and :attr:`out` are mutually exclusive.
 
         Args:
             custom_path (:obj:`str`, optional): Custom path.
-            out (:obj:`object`, optional): A file-like object. Must be opened in binary mode, if
-                applicable.
+            out (:obj:`io.BufferedWriter`, optional): A file-like object. Must be opened for
+                writing in binary mode, if applicable.
             timeout (:obj:`int` | :obj:`float`, optional): If this value is specified, use it as
                 the read timeout from the server (instead of the one specified during creation of
                 the connection pool).
 
+        Returns:
+            :obj:`str` | :obj:`io.BufferedWriter`: The same object as :attr:`out` if specified.
+            Otherwise, returns the filename downloaded to.
+
         Raises:
-            ValueError: If both ``custom_path`` and ``out`` are passed.
+            ValueError: If both :attr:`custom_path` and :attr:`out` are passed.
 
         """
         if custom_path is not None and out is not None:
             raise ValueError('custom_path and out are mutually exclusive')
 
         # Convert any UTF-8 char into a url encoded ASCII string.
-        sres = urllib_parse.urlsplit(self.file_path)
-        url = urllib_parse.urlunsplit(urllib_parse.SplitResult(
-            sres.scheme, sres.netloc, urllib_parse.quote(sres.path), sres.query, sres.fragment))
+        url = self._get_encoded_url()
 
         if out:
             buf = self.bot.request.retrieve(url)
+            if self._credentials:
+                buf = decrypt(b64decode(self._credentials.secret),
+                              b64decode(self._credentials.hash),
+                              buf)
             out.write(buf)
-
+            return out
         else:
             if custom_path:
                 filename = custom_path
             else:
                 filename = basename(self.file_path)
 
-            self.bot.request.download(url, filename, timeout=timeout)
+            buf = self.bot.request.retrieve(url, timeout=timeout)
+            if self._credentials:
+                buf = decrypt(b64decode(self._credentials.secret),
+                              b64decode(self._credentials.hash),
+                              buf)
+            with open(filename, 'wb') as fobj:
+                fobj.write(buf)
+            return filename
+
+    def _get_encoded_url(self):
+        """Convert any UTF-8 char in :obj:`File.file_path` into a url encoded ASCII string."""
+        sres = urllib_parse.urlsplit(self.file_path)
+        return urllib_parse.urlunsplit(urllib_parse.SplitResult(
+            sres.scheme, sres.netloc, urllib_parse.quote(sres.path), sres.query, sres.fragment))
+
+    def download_as_bytearray(self, buf=None):
+        """Download this file and return it as a bytearray.
+
+        Args:
+            buf (:obj:`bytearray`, optional): Extend the given bytearray with the downloaded data.
+
+        Returns:
+            :obj:`bytearray`: The same object as :attr:`buf` if it was specified. Otherwise a newly
+            allocated :obj:`bytearray`.
+
+        """
+        if buf is None:
+            buf = bytearray()
+
+        buf.extend(self.bot.request.retrieve(self._get_encoded_url()))
+        return buf
+
+    def set_credentials(self, credentials):
+        self._credentials = credentials

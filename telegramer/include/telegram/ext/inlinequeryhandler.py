@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2017
+# Copyright (C) 2015-2018
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,10 +19,10 @@
 """ This module contains the InlineQueryHandler class """
 import re
 
-## REMREM from future.utils import string_types
+# REMREM from future.utils import string_types
 try:
     from future.utils import string_types
-except:
+except Exception as e:
     pass
 
 try:
@@ -59,7 +59,7 @@ class InlineQueryHandler(Handler):
 
     Note:
         :attr:`pass_user_data` and :attr:`pass_chat_data` determine whether a ``dict`` you
-        can use to keep any data in will be sent to the :attr:`callback` function.. Related to
+        can use to keep any data in will be sent to the :attr:`callback` function. Related to
         either the user or the chat that the update was sent in. For each update from the same user
         or in the same chat, it will be the same ``dict``.
 

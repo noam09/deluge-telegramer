@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2017
+# Copyright (C) 2015-2018
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,10 +22,10 @@
 import re
 import warnings
 
-## REMREM from future.utils import string_types
+# REMREM from future.utils import string_types
 try:
     from future.utils import string_types
-except:
+except Exception as e:
     pass
 
 try:
@@ -62,7 +62,7 @@ class RegexHandler(Handler):
 
     Note:
         :attr:`pass_user_data` and :attr:`pass_chat_data` determine whether a ``dict`` you
-        can use to keep any data in will be sent to the :attr:`callback` function.. Related to
+        can use to keep any data in will be sent to the :attr:`callback` function. Related to
         either the user or the chat that the update was sent in. For each update from the same user
         or in the same chat, it will be the same ``dict``.
 
@@ -154,9 +154,9 @@ class RegexHandler(Handler):
         """
         if not isinstance(update, Update) and not update.effective_message:
             return False
-        if any([(self.message_updates and update.message),
-                (self.edited_updates and update.edited_message),
-                (self.channel_post_updates and update.channel_post)]) and \
+        if any([self.message_updates and update.message,
+                self.edited_updates and (update.edited_message or update.edited_channel_post),
+                self.channel_post_updates and update.channel_post]) and \
                 update.effective_message.text:
             match = re.match(self.pattern, update.effective_message.text)
             return bool(match)
