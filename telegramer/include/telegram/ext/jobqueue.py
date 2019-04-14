@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# flake8: noqa E501
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2017
+# Copyright (C) 2015-2018
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -21,12 +20,11 @@
 
 import logging
 import time
-import warnings
 import datetime
 import weakref
 from numbers import Number
 from threading import Thread, Lock, Event
-## REMREM from queue import PriorityQueue, Empty
+# REMREM from queue import PriorityQueue, Empty
 from Queue import PriorityQueue, Empty
 
 
@@ -39,23 +37,16 @@ class JobQueue(object):
     """This class allows you to periodically perform tasks with the bot.
 
     Attributes:
-        queue (:obj:`PriorityQueue`): The queue that holds the Jobs.
+        _queue (:obj:`PriorityQueue`): The queue that holds the Jobs.
         bot (:class:`telegram.Bot`): Bot that's send to the handlers.
 
     Args:
         bot (:class:`telegram.Bot`): The bot instance that should be passed to the jobs.
 
-    Deprecated:
-        prevent_autostart (:obj:`bool`, optional): Thread does not start during initialisation.
-        Use `start` method instead.
-
     """
 
-    def __init__(self, bot, prevent_autostart=None):
-        if prevent_autostart is not None:
-            warnings.warn("prevent_autostart is being deprecated, use `start` method instead.")
-
-        self.queue = PriorityQueue()
+    def __init__(self, bot):
+        self._queue = PriorityQueue()
         self.bot = bot
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__start_lock = Lock()
@@ -64,37 +55,6 @@ class JobQueue(object):
         self.__thread = None
         self._next_peek = None
         self._running = False
-
-    def put(self, job, next_t=None):
-        """Queue a new job.
-
-        Note:
-            This method is deprecated. Please use: :attr:`run_once`, :attr:`run_daily`
-            or :attr:`run_repeating` instead.
-
-        Args:
-            job (:class:`telegram.ext.Job`): The ``Job`` instance representing the new job.
-            next_t (:obj:`int` | :obj:`float` | :obj:`datetime.timedelta` | :obj:`datetime.datetime` | :obj:`datetime.time`, optional):
-                Time in or at which the job should run for the first time. This parameter will
-                be interpreted depending on its type.
-
-                * :obj:`int` or :obj:`float` will be interpreted as "seconds from now" in which the
-                  job should run.
-                * :obj:`datetime.timedelta` will be interpreted as "time from now" in which the
-                  job should run.
-                * :obj:`datetime.datetime` will be interpreted as a specific date and time at
-                  which the job should run.
-                * :obj:`datetime.time` will be interpreted as a specific time at which the job
-                  should run. This could be either today or, if the time has already passed,
-                  tomorrow.
-
-        """
-
-        warnings.warn("'JobQueue.put' is being deprecated, use 'JobQueue.run_once', "
-                      "'JobQueue.run_daily' or 'JobQueue.run_repeating' instead")
-        if job.job_queue is None:
-            job.job_queue = self
-        self._put(job, next_t=next_t)
 
     def _put(self, job, next_t=None, last_t=None):
         if next_t is None:
@@ -120,7 +80,7 @@ class JobQueue(object):
 
         self.logger.debug('Putting job %s with t=%f', job.name, next_t)
 
-        self.queue.put((next_t, job))
+        self._queue.put((next_t, job))
 
         # Wake up the loop if this job should be executed next
         self._set_next_peek(next_t)
@@ -133,7 +93,8 @@ class JobQueue(object):
                 job. It should take ``bot, job`` as parameters, where ``job`` is the
                 :class:`telegram.ext.Job` instance. It can be used to access it's
                 ``job.context`` or change it to a repeating job.
-            when (:obj:`int` | :obj:`float` | :obj:`datetime.timedelta` | :obj:`datetime.datetime` | :obj:`datetime.time`):
+            when (:obj:`int` | :obj:`float` | :obj:`datetime.timedelta` |                         \
+                  :obj:`datetime.datetime` | :obj:`datetime.time`):
                 Time in or at which the job should run. This parameter will be interpreted
                 depending on its type.
 
@@ -172,7 +133,8 @@ class JobQueue(object):
             interval (:obj:`int` | :obj:`float` | :obj:`datetime.timedelta`): The interval in which
                 the job will run. If it is an :obj:`int` or a :obj:`float`, it will be interpreted
                 as seconds.
-            first (:obj:`int` | :obj:`float` | :obj:`datetime.timedelta` | :obj:`datetime.datetime` | :obj:`datetime.time`, optional):
+            first (:obj:`int` | :obj:`float` | :obj:`datetime.timedelta` |                        \
+                   :obj:`datetime.datetime` | :obj:`datetime.time`, optional):
                 Time in or at which the job should run. This parameter will be interpreted
                 depending on its type.
 
@@ -197,7 +159,6 @@ class JobQueue(object):
             queue.
 
         """
-
         job = Job(callback,
                   interval=interval,
                   repeat=True,
@@ -228,7 +189,6 @@ class JobQueue(object):
             queue.
 
         """
-
         job = Job(callback,
                   interval=datetime.timedelta(days=1),
                   repeat=True,
@@ -251,14 +211,13 @@ class JobQueue(object):
 
     def tick(self):
         """Run all jobs that are due and re-enqueue them with their interval."""
-
         now = time.time()
 
         self.logger.debug('Ticking jobs with t=%f', now)
 
         while True:
             try:
-                t, job = self.queue.get(False)
+                t, job = self._queue.get(False)
             except Empty:
                 break
 
@@ -271,7 +230,7 @@ class JobQueue(object):
                 # 2. At the first iteration of the loop only if `self.put()` had triggered
                 #    `self.__tick` because `self._next_peek` wasn't set
                 self.logger.debug("Next task isn't due yet. Finished!")
-                self.queue.put((t, job))
+                self._queue.put((t, job))
                 self._set_next_peek(t)
                 break
 
@@ -286,7 +245,7 @@ class JobQueue(object):
                         self.logger.debug('Running job %s', job.name)
                         job.run(self.bot)
 
-                except:
+                except Exception:
                     self.logger.exception('An uncaught error was raised while executing job %s',
                                           job.name)
             else:
@@ -299,7 +258,6 @@ class JobQueue(object):
 
     def start(self):
         """Starts the job_queue thread."""
-
         self.__start_lock.acquire()
 
         if not self._running:
@@ -336,7 +294,6 @@ class JobQueue(object):
 
     def stop(self):
         """Stops the thread."""
-
         with self.__start_lock:
             self._running = False
 
@@ -346,8 +303,13 @@ class JobQueue(object):
 
     def jobs(self):
         """Returns a tuple of all jobs that are currently in the ``JobQueue``."""
+        with self._queue.mutex:
+            return tuple(job[1] for job in self._queue.queue if job)
 
-        return tuple(job[1] for job in self.queue.queue if job)
+    def get_jobs_by_name(self, name):
+        """Returns a tuple of jobs with the given name that are currently in the ``JobQueue``"""
+        with self._queue.mutex:
+            return tuple(job[1] for job in self._queue.queue if job and job[1].name == name)
 
 
 class Job(object):
@@ -374,7 +336,7 @@ class Job(object):
         name (:obj:`str`, optional): The name of the new job. Defaults to ``callback.__name__``.
         days (Tuple[:obj:`int`], optional): Defines on which days of the week the job should run.
             Defaults to ``Days.EVERY_DAY``
-        job_queue (class:`telegram.ext.JobQueue`, optional): The ``JobQueue`` this job belongs to.
+        job_queue (:class:`telegram.ext.JobQueue`, optional): The ``JobQueue`` this job belongs to.
             Only optional for backward compatibility with ``JobQueue.put()``.
 
     """
@@ -408,7 +370,6 @@ class Job(object):
 
     def run(self, bot):
         """Executes the callback function."""
-
         self.callback(bot, self)
 
     def schedule_removal(self):
@@ -417,7 +378,6 @@ class Job(object):
         its callback function again.
 
         """
-
         self._remove.set()
 
     @property
@@ -460,10 +420,11 @@ class Job(object):
     @property
     def interval_seconds(self):
         """:obj:`int`: The interval for this job in seconds."""
-        if isinstance(self.interval, datetime.timedelta):
-            return self.interval.total_seconds()
+        interval = self.interval
+        if isinstance(interval, datetime.timedelta):
+            return interval.total_seconds()
         else:
-            return self.interval
+            return interval
 
     @property
     def repeat(self):
@@ -479,7 +440,6 @@ class Job(object):
     @property
     def days(self):
         """Tuple[:obj:`int`]: Optional. Defines on which days of the week the job should run."""
-
         return self._days
 
     @days.setter
@@ -499,7 +459,6 @@ class Job(object):
     @property
     def job_queue(self):
         """:class:`telegram.ext.JobQueue`: Optional. The ``JobQueue`` this job belongs to."""
-
         return self._job_queue
 
     @job_queue.setter

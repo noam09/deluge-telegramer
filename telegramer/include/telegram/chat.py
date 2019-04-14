@@ -2,7 +2,7 @@
 # pylint: disable=C0103,W0622
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2017
+# Copyright (C) 2015-2018
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -38,6 +38,9 @@ class Chat(TelegramObject):
         invite_link (:obj:`str`): Optional. Chat invite link, for supergroups and channel chats.
         pinned_message (:class:`telegram.Message`): Optional. Pinned message, for supergroups.
             Returned only in get_chat.
+        sticker_set_name (:obj:`str`): Optional. For supergroups, name of Group sticker set.
+        can_set_sticker_set (:obj:`bool`): Optional. ``True``, if the bot can change group the
+            sticker set.
 
     Args:
         id (:obj:`int`): Unique identifier for this chat. This number may be greater than 32 bits
@@ -61,6 +64,10 @@ class Chat(TelegramObject):
         pinned_message (:class:`telegram.Message`, optional): Pinned message, for supergroups.
             Returned only in get_chat.
         bot (:class:`telegram.Bot`, optional): The Bot to use for instance methods.
+        sticker_set_name (:obj:`str`, optional): For supergroups, name of Group sticker set.
+            Returned only in get_chat.
+        can_set_sticker_set (:obj:`bool`, optional): ``True``, if the bot can change group the
+            sticker set. Returned only in get_chat.
         **kwargs (:obj:`dict`): Arbitrary keyword arguments.
 
     """
@@ -87,6 +94,8 @@ class Chat(TelegramObject):
                  description=None,
                  invite_link=None,
                  pinned_message=None,
+                 sticker_set_name=None,
+                 can_set_sticker_set=None,
                  **kwargs):
         # Required
         self.id = int(id)
@@ -101,9 +110,19 @@ class Chat(TelegramObject):
         self.description = description
         self.invite_link = invite_link
         self.pinned_message = pinned_message
+        self.sticker_set_name = sticker_set_name
+        self.can_set_sticker_set = can_set_sticker_set
 
         self.bot = bot
         self._id_attrs = (self.id,)
+
+    @property
+    def link(self):
+        """:obj:`str`: Convenience property. If the chat has a :attr:`username`, returns a t.me
+        link of the chat."""
+        if self.username:
+            return "https://t.me/{}".format(self.username)
+        return None
 
     @classmethod
     def de_json(cls, data, bot):
@@ -201,3 +220,120 @@ class Chat(TelegramObject):
 
         """
         return self.bot.unban_chat_member(self.id, *args, **kwargs)
+
+    def send_message(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_message(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_message(self.id, *args, **kwargs)
+
+    def send_photo(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_photo(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_photo(self.id, *args, **kwargs)
+
+    def send_audio(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_audio(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_audio(self.id, *args, **kwargs)
+
+    def send_document(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_document(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_document(self.id, *args, **kwargs)
+
+    def send_animation(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_animation(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_animation(self.id, *args, **kwargs)
+
+    def send_sticker(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_sticker(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_sticker(self.id, *args, **kwargs)
+
+    def send_video(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_video(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_video(self.id, *args, **kwargs)
+
+    def send_video_note(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_video_note(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_video_note(self.id, *args, **kwargs)
+
+    def send_voice(self, *args, **kwargs):
+        """Shortcut for::
+
+            bot.send_voice(Chat.id, *args, **kwargs)
+
+        Where Chat is the current instance.
+
+        Returns:
+            :class:`telegram.Message`: On success, instance representing the message posted.
+
+        """
+        return self.bot.send_voice(self.id, *args, **kwargs)

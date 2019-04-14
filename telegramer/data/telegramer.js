@@ -3,7 +3,7 @@ Script: telegramer.js
     The client-side javascript code for the Telegramer plugin.
 
 Copyright:
-    (C) Noam 2016-2017 <noamgit@gmail.com>
+    Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
     https://github.com/noam09
 
     Much credit to:
@@ -181,6 +181,31 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             autoWidth: true,
             value: '60'
         }));
+        fieldset = this.add({
+            xtype: 'fieldset',
+            title: _('Proxy Configuration'),
+            autoHeight: true,
+            autoWidth: true,
+            defaultType: 'textfield'
+        });
+        this.opts.bind('proxy_url', fieldset.add({
+            fieldLabel: _('Proxy URL'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'proxy_url'
+        }));
+        this.opts.bind('urllib3_proxy_kwargs_username', fieldset.add({
+            fieldLabel: _('Username'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'urllib3_proxy_kwargs_username'
+        }));
+        this.opts.bind('urllib3_proxy_kwargs_password', fieldset.add({
+            fieldLabel: _('Password'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'urllib3_proxy_kwargs_password'
+        }));
         this.teleTester = this.add({
             fieldLabel: _(''),
             name: 'telegram_test',
@@ -214,7 +239,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
 
     teleReload: function() {
         this.onApply();
-        deluge.client.telegramer.restart_telegram();
+        deluge.client.telegramer.restart_telegramer();
     },
 
     onPreferencesShow: function () {
@@ -243,6 +268,15 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             }
             if (!Ext.isEmpty(config['user_timer'])) {
                 config['user_timer'] = config['user_timer'];
+            }
+            if (!Ext.isEmpty(config['proxy_url'])) {
+                config['proxy_url'] = config['proxy_url']
+            }
+            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_username'])) {
+                config['urllib3_proxy_kwargs_username'] = config['urllib3_proxy_kwargs_username']
+            }
+            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_password'])) {
+                config['urllib3_proxy_kwargs_password'] = config['urllib3_proxy_kwargs_password']
             }
             if (!Ext.isEmpty(config['cat1'])) {
                 config['cat1'] = config['cat1'];
@@ -291,6 +325,15 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             }
             if (!Ext.isEmpty(changed['user_timer'])) {
                 changed['user_timer'] = changed['user_timer'];
+            }
+            if (!Ext.isEmpty(changed['proxy_url'])) {
+            changed['proxy_url'] = changed['proxy_url']
+            }
+            if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_username'])) {
+            changed['urllib3_proxy_kwargs_username'] = changed['urllib3_proxy_kwargs_username']
+            }
+            if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_password'])) {
+            changed['urllib3_proxy_kwargs_password'] = changed['urllib3_proxy_kwargs_password']
             }
             if (!Ext.isEmpty(changed['cat1'])) {
             changed['cat1'] = changed['cat1'];
