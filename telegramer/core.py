@@ -53,7 +53,7 @@ from deluge.log import LOG as log
 # sys.setdefaultencoding('utf8')
 
 #############################
-log.setLevel(logging.DEBUG)
+# log.setLevel(logging.DEBUG)
 #############################
 
 
@@ -352,7 +352,7 @@ class Core(CorePluginBase):
             else:
                 log.debug(prelog() + 'send_message, to set')
             if not isinstance(to, (list,)):
-                log.debug(prelog() + 'Convert to to list')
+                log.debug(prelog() + 'Convert "to" to list')
                 to = [to]
             log.debug(prelog() + "[to] " + str(to))
             for usr in to:
