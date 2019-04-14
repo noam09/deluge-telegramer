@@ -103,8 +103,11 @@ DEFAULT_PREFS = {"telegram_token":                "Contact @BotFather and create
                  'urllib3_proxy_kwargs_username': "",
                  "urllib3_proxy_kwargs_password": "",
                  "regex_exp":                     {},
-                 "categories":                    {}
+                 "categories":                    {},
+                 "minimum_speed":                 -1,
+                 "user_timer":                    60
                  }
+
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
                          '(KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}
@@ -264,6 +267,14 @@ class Core(CorePluginBase):
                         log.debug(prelog() + 'Notify: ' + str(self.notifylist))
 
                 reactor.callLater(2, self.connect_events)
+                # Slow torrent notifications
+                if self.config['minimum_speed'] > -1:
+                    try:
+                        self.check_speed_timer = LoopingCall(self.check_speed)
+                        self.check_speed_timer.start(int(self.config['user_timer']), now=False)
+                    except Exception as e:
+                        log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+                # Proxy args
                 REQUEST_KWARGS = {
                     'proxy_url': self.config['proxy_url'],
                     'urllib3_proxy_kwargs': {
@@ -332,6 +343,7 @@ class Core(CorePluginBase):
 
     def disable(self):
         try:
+            self.check_speed_timer.stop()
             log.info(prelog() + 'Disable')
             reactor.callLater(2, self.disconnect_events)
             self.whitelist = []
@@ -968,6 +980,18 @@ class Core(CorePluginBase):
 
     def update_stats(self):
         log.debug('update_stats')
+
+    def check_speed(self):
+        log.debug("Minimum speed: %s" , self.config['minimum_speed'])
+        try:
+            for t in component.get('TorrentManager').torrents.values():
+                if t.get_status(('state',))['state'] == 'Downloading' :
+                    if t.status.download_rate < (self.config['minimum_speed'] * 1024):
+                        message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})				
+                        self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
+        except Exception as e :
+            log.error(prelog() + 'Unexpected behavior %s.' % str(e))
+        return
 
     def connect_events(self):
         event_manager = component.get('EventManager')

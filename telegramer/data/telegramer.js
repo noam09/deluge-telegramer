@@ -161,6 +161,28 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         fieldset = this.add({
             xtype: 'fieldset',
+            title: _('Slow torrents options'),
+            autoHeight: true,
+            defaultType: 'textfield',
+        });
+        this.opts.bind('minimum_speed', fieldset.add({
+            fieldLabel: _('Minimum download speed (KB/s) -1 means no minimum'),
+            anchor:'100%',
+            name: 'minimum_speed',
+            id: 'minimum_speed',
+            autoWidth: true,
+            value: '-1'
+        }));
+        this.opts.bind('user_timer', fieldset.add({
+            fieldLabel: _('Check for slow torrents every... (seconds)'),
+            anchor:'100%',
+            name: 'user_timer',
+            id: 'user_timer',
+            autoWidth: true,
+            value: '60'
+        }));
+        fieldset = this.add({
+            xtype: 'fieldset',
             title: _('Proxy Configuration'),
             autoHeight: true,
             autoWidth: true,
@@ -241,6 +263,12 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             if (!Ext.isEmpty(config['telegram_notify_finished'])) {
                 config['telegram_notify_finished'] = config['telegram_notify_finished'];
             }
+            if (!Ext.isEmpty(config['minimum_speed'])) {
+                config['minimum_speed'] = config['minimum_speed'];
+            }
+            if (!Ext.isEmpty(config['user_timer'])) {
+                config['user_timer'] = config['user_timer'];
+            }
             if (!Ext.isEmpty(config['proxy_url'])) {
                 config['proxy_url'] = config['proxy_url']
             }
@@ -291,6 +319,12 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             }
             if (!Ext.isEmpty(changed['telegram_notify_finished'])) {
             changed['telegram_notify_finished'] = changed['telegram_notify_finished'];
+            }
+            if (!Ext.isEmpty(changed['minimum_speed'])) {
+                changed['minimum_speed'] = changed['minimum_speed'];
+            }
+            if (!Ext.isEmpty(changed['user_timer'])) {
+                changed['user_timer'] = changed['user_timer'];
             }
             if (!Ext.isEmpty(changed['proxy_url'])) {
             changed['proxy_url'] = changed['proxy_url']
