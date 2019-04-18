@@ -104,8 +104,8 @@ DEFAULT_PREFS = {"telegram_token":                "Contact @BotFather and create
                  "urllib3_proxy_kwargs_password": "",
                  "regex_exp":                     {},
                  "categories":                    {},
-                 "minimum_speed":                 -1,
-                 "user_timer":                    60
+                 "minimum_speed":                 int(-1),
+                 "user_timer":                    int(60)
                  }
 
 
@@ -241,7 +241,7 @@ class Core(CorePluginBase):
                              'help':        self.cmd_help,
                              'start':       self.cmd_help,
                              'reload':      self.restart_telegramer,
-                             'rss':         self.cmd_add_rss,
+                             # 'rss':         self.cmd_add_rss,
                              'commands':    self.cmd_help}
 
             log.debug(prelog() + 'Initialize bot')
@@ -301,6 +301,19 @@ class Core(CorePluginBase):
                     },
                     fallbacks=[CommandHandler('cancel', self.cancel)]
                 )
+                # Add torrent paused
+                conv_handler_paused = ConversationHandler(
+                    entry_points=[CommandHandler('add_paused', self.add_paused)],
+                    states={
+                        CATEGORY: [MessageHandler(Filters.text, self.category)],
+                        SET_LABEL: [MessageHandler(Filters.text, self.set_label)],
+                        TORRENT_TYPE: [MessageHandler(Filters.text, self.torrent_type)],
+                        ADD_MAGNET: [MessageHandler(Filters.text, self.add_magnet)],
+                        ADD_TORRENT: [MessageHandler(Filters.document, self.add_torrent)],
+                        ADD_URL: [MessageHandler(Filters.text, self.add_url)]
+                    },
+                    fallbacks=[CommandHandler('cancel', self.cancel)]
+                )
                 conv_handler_rss = ConversationHandler(
                     entry_points=[CommandHandler('rss', self.cmd_add_rss)],
                     states={
@@ -313,6 +326,7 @@ class Core(CorePluginBase):
                 )
 
                 dp.add_handler(conv_handler)
+                dp.add_handler(conv_handler_paused)
                 dp.add_handler(conv_handler_rss)
                 dp.add_handler(MessageHandler(Filters.document, self.add_torrent))
                 dp.add_handler(MessageHandler(filter_magnets, self.find_magnet))
@@ -435,6 +449,7 @@ class Core(CorePluginBase):
         if str(update.message.chat.id) in self.whitelist:
             log.debug(prelog() + str(update.message.chat.id) + " in whitelist")
             help_msg = ['/add - Add a new torrent',
+                        '/add_paused - Add a new torrent paused',
                         '/rss - Add a new RSS filter',
                         '/list - List all torrents',
                         '/down - List downloading torrents',
@@ -483,6 +498,7 @@ class Core(CorePluginBase):
     def add(self, bot, update):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
+            self.opts = {}
             self.is_rss = False
             self.magnet_only = False
             return self.prepare_categories(bot, update)
@@ -492,6 +508,15 @@ class Core(CorePluginBase):
             else:
                 return self.prepare_categories(bot, update)
             """
+
+    def add_paused(self, bot, update):
+        # log.error(type(update.message.chat.id) + str(update.message.chat.id))
+        if str(update.message.chat.id) in self.whitelist:
+            self.opts = {}
+            self.opts["add_paused"] = True
+            self.is_rss = False
+            self.magnet_only = False
+            return self.prepare_categories(bot, update)
 
     def cmd_add_rss(self, bot, update):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
@@ -574,7 +599,7 @@ class Core(CorePluginBase):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 if STRINGS['no_category'] == update.message.text:
-                    self.opts = {}
+                    self.opts = self.opts
                 else:
                     if update.message.text in self.config["categories"].keys():
                         # move_completed_path vs download_location
@@ -584,7 +609,7 @@ class Core(CorePluginBase):
 
                     # If none of the existing categories were selected,
                     # maybe user is trying to save to a new directory
-                    if not self.opts:
+                    else:  # if not self.opts:
                         try:
                             log.debug(prelog() + 'Custom directory entered: ' +
                                       str(update.message.text))
@@ -598,8 +623,8 @@ class Core(CorePluginBase):
                                 if not os.path.exists(otherpath):
                                     log.debug(prelog() + 'mkdir {}'.format(otherpath))
                                     os.makedirs(otherpath)
-                                self.opts = {'move_completed_path': otherpath,
-                                             'move_completed': True}
+                                self.opts["move_completed_path"] = otherpath
+                                self.opts["move_completed"] = True
                         except Exception as e:
                             log.error(prelog() + str(e) + '\n' +
                                       traceback.format_exc())
@@ -982,14 +1007,14 @@ class Core(CorePluginBase):
         log.debug('update_stats')
 
     def check_speed(self):
-        log.debug("Minimum speed: %s" , self.config['minimum_speed'])
+        log.debug("Minimum speed: %s", self.config["minimum_speed"])
         try:
             for t in component.get('TorrentManager').torrents.values():
-                if t.get_status(('state',))['state'] == 'Downloading' :
+                if t.get_status(("state",))["state"] == "Downloading":
                     if t.status.download_rate < (self.config['minimum_speed'] * 1024):
-                        message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})				
+                        message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})
                         self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
-        except Exception as e :
+        except Exception as e:
             log.error(prelog() + 'Unexpected behavior %s.' % str(e))
         return
 
