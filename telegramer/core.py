@@ -46,6 +46,7 @@
 import os
 import logging
 import traceback
+from time import strftime
 from deluge.log import LOG as log
 
 # import sys
@@ -1036,9 +1037,13 @@ class Core(CorePluginBase):
         if (self.config['telegram_notify_added'] is False):
             return
         try:
+            # get_torrent_status
             # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status({})
+            # Check if label shows up here
+            log.debug("get_status for {}".format(torrent_id))
+            log.debug(torrent_status)
             message = _('Added Torrent *%(name)s*') % torrent_status
             log.info(prelog() + 'Sending torrent added message to ' +
                      str(self.notifylist))
