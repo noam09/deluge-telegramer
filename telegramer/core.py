@@ -228,6 +228,7 @@ class Core(CorePluginBase):
             self.notifylist = []
             self.label = None
             self.magnet_only = False
+            self.check_speed_timer = None
             self.COMMANDS = {'list':        self.cmd_list,
                              'down':        self.cmd_down,
                              'downloading': self.cmd_down,
@@ -286,7 +287,8 @@ class Core(CorePluginBase):
                 bot_request = Request(**REQUEST_KWARGS)
                 self.bot = Bot(self.config['telegram_token'], request=bot_request)
                 # Create the EventHandler and pass it bot's token.
-                self.updater = Updater(self.config['telegram_token'], request_kwargs=REQUEST_KWARGS)
+                # self.updater = Updater(self.config['telegram_token'], bot=self.bot, request_kwargs=REQUEST_KWARGS)
+                self.updater = Updater(bot=self.bot, request_kwargs=REQUEST_KWARGS)
                 # Get the dispatcher to register handlers
                 dp = self.updater.dispatcher
                 # Add conversation handler with the different states
@@ -304,7 +306,7 @@ class Core(CorePluginBase):
                 )
                 # Add torrent paused
                 conv_handler_paused = ConversationHandler(
-                    entry_points=[CommandHandler('add_paused', self.add_paused)],
+                    entry_points=[CommandHandler('addpaused', self.add_paused)],
                     states={
                         CATEGORY: [MessageHandler(Filters.text, self.category)],
                         SET_LABEL: [MessageHandler(Filters.text, self.set_label)],
@@ -350,6 +352,7 @@ class Core(CorePluginBase):
                 #######################################################################
                 # Start the Bot
                 self.updater.start_polling(poll_interval=0.05)
+                # self.updater.idle() # blocks
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -358,7 +361,8 @@ class Core(CorePluginBase):
 
     def disable(self):
         try:
-            self.check_speed_timer.stop()
+            if self.check_speed_timer:
+                self.check_speed_timer.stop()
             log.info(prelog() + 'Disable')
             reactor.callLater(2, self.disconnect_events)
             self.whitelist = []
@@ -410,6 +414,8 @@ class Core(CorePluginBase):
         pass
         """Like non_stop, this will run forever
         this way suspend/sleep won't kill the thread"""
+
+        """
         while True:
             try:
                 if self.updater:
@@ -425,10 +431,13 @@ class Core(CorePluginBase):
                 log.error(prelog() + str(e) + '\n' +
                           traceback.format_exc() + ' - Sleeping...')
                 sleep(10)
+        """
 
     def telegram_poll_stop(self):
         try:
             log.debug(prelog() + 'Stop polling')
+            # if self.updater.dispatcher:
+            #     self.updater.dispatcher.stop()
             if self.updater:
                 self.updater.stop()
         except Exception as e:
@@ -450,7 +459,7 @@ class Core(CorePluginBase):
         if str(update.message.chat.id) in self.whitelist:
             log.debug(prelog() + str(update.message.chat.id) + " in whitelist")
             help_msg = ['/add - Add a new torrent',
-                        '/add_paused - Add a new torrent paused',
+                        '/addpaused - Add a new torrent paused',
                         '/rss - Add a new RSS filter',
                         '/list - List all torrents',
                         '/down - List downloading torrents',
@@ -514,7 +523,7 @@ class Core(CorePluginBase):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
             self.opts = {}
-            self.opts["add_paused"] = True
+            self.opts["addpaused"] = True
             self.is_rss = False
             self.magnet_only = False
             return self.prepare_categories(bot, update)
