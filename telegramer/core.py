@@ -613,9 +613,8 @@ class Core(CorePluginBase):
                 else:
                     if update.message.text in self.config["categories"].keys():
                         # move_completed_path vs download_location
-                        self.opts = {'move_completed_path':
-                                     self.config["categories"][update.message.text],
-                                     'move_completed': True}
+                        self.opts["move_completed_path"] = self.config["categories"][update.message.text]
+                        self.opts["move_completed"] = True
 
                     # If none of the existing categories were selected,
                     # maybe user is trying to save to a new directory
@@ -1053,6 +1052,12 @@ class Core(CorePluginBase):
             # Check if label shows up here
             log.debug("get_status for {}".format(torrent_id))
             log.debug(torrent_status)
+            # Check if custom message
+            # if custom msg:
+            #   check length
+            #   check markdown
+            #   
+            # else:
             message = _('Added Torrent *%(name)s*') % torrent_status
             log.info(prelog() + 'Sending torrent added message to ' +
                      str(self.notifylist))
