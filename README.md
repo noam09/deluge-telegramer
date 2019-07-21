@@ -1,4 +1,6 @@
-# <p align="center">Telegramer
+# <p align="center">Telegramer</p>
+
+<p align="center"><a href="https://github.com/noam09/deluge-telegramer" title="Telegramer"><img src="https://i.imgur.com/xXIPX44.png" alt="Telegramer"></a></p>
 
 [Telegramer](https://github.com/noam09/deluge-telegramer) is a Deluge plugin for sending notifications, adding and viewing torrents using [Telegram](https://telegram.org/) messenger. It features both a GTK and Web UI.
 
