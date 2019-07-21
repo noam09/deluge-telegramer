@@ -2,7 +2,7 @@
 
 <p align="center"><a href="https://github.com/noam09/deluge-telegramer" title="Telegramer"><img src="https://i.imgur.com/xXIPX44.png" alt="Telegramer"></a></p>
 
-[Telegramer](https://github.com/noam09/deluge-telegramer) is a Deluge plugin for sending notifications, adding and viewing torrents using [Telegram](https://telegram.org/) messenger. It features both a GTK and Web UI.
+[Telegramer](https://github.com/noam09/deluge-telegramer) is a [Deluge](https://deluge-torrent.org) plugin for sending notifications, adding and viewing torrents using [Telegram](https://telegram.org/) messenger. It features both a GTK and Web UI.
 
 The plugin runs a [Telegram bot](https://telegram.org/blog/bot-revolution) on the host machine which listens for commands the user sends, allowing you to list active torrents, download new torrents, and receive notifications when torrents are added to Deluge and when they finish downloading.
 
@@ -18,7 +18,7 @@ Since the bot runs locally and is owned by the same user running it, Telegramer 
 
 ## Requirements
 
-Currently Telegramer has been tested mainly on Linux using Deluge 1.3.14. Support for Windows is brand new and ready for testing.
+Currently Telegramer has been tested mainly on Linux using Deluge 1.3.15. Support for Windows is also available.
 Make sure you have Python [`setuptools`](https://pypi.python.org/pypi/setuptools#installation-instructions) installed in order to build the plugin.
 The plugin itself works with the [`python-telegram-bot`](https://github.com/python-telegram-bot/python-telegram-bot) wrapper, which comes pre-packaged.
 
@@ -53,20 +53,24 @@ Now, test these settings by clicking the **`Test`** button. You should receive a
 * The `/add` command allows you to add a torrent to Deluge, using either a magnet link, a torrent file URL, or an actual torrent file!
 * Contact [@BotFather](https://telegram.me/BotFather) again to give your bot a profile photo, change its name, or add quick-access commands to your bot using `/setcommands`. Adding the `/help` command to your bot's quick-access list an easy way to receive clickable links to all other commands.
 
-**Categories:** You may also notice the Category fields in the Telegramer configuration panel. This is an optional feature which allows you to set pairs of Categories and matching Directories to which you would like to move torrent contents upon completion. For example, if you set `Category 1` to `Music` and `Directory 1` to `C:\Music` or `/home/user/Music`, your bot will prompt you to save in the `Music` category when you use the `/add` command to add a new torrent. Now the torrent you download will be moved to the appropriate directory when finished! Make sure the directories you set in the category configuration really exist, or else the categories won't show up as options when adding a new torrent.
+**Categories:** You may also notice the *Category* fields in the Telegramer configuration panel. This is an optional feature which allows you to set pairs of Categories and matching Directories to which you would like to move torrent contents upon completion. For example, if you set `Category 1` to `Music` and `Directory 1` to `C:\Music` or `/home/user/Music`, your bot will prompt you to save in the `Music` category when you use the `/add` command to add a new torrent. Now the torrent you download will be moved to the appropriate directory when finished! Make sure the directories you set in the category configuration really exist, or else the categories won't show up as options when adding a new torrent.
 Alternatively, you may also enter a new or different directory to which you'd like to save files once they're finished downloading. Simply send your bot the directory path in quotes (e.g. `"/home/user/NewDirectory/"`).
 
 **Labels:**
-In addition to Categories, you can use the built-in Label plugin to label torrents using existing labels or by creating a new label.
+In addition to *Categories*, you can use the built-in *Label* plugin to label torrents using existing labels or by creating a new label.
 
 **Proxy:**
 The Telegram bot can also direct all traffic through a proxy. Proxy addresses should use the format: `protocol://PROXY_HOST:PROXY_PORT`, e.g. `socks5://127.0.0.1:9051`. Proxy settings may also accept optional authentication (username and password).
+
+**RSS:**
+If you use the [YaRSS2](https://dev.deluge-torrent.org/wiki/Plugins/YaRSS2) plugin, you can add new search keywords to any of your existing RSS feeds, using predefined regular expression templates. Simply send `/rss`, pick one of your predefined RSS feeds, then pick one of your predefined regular expression templates, and send your bot the keyword you'd like YaRSS2 to grab (for an example, see the [screenshots](#screenshots) below).
 
 ## Development
 
 Want to contribute? Great!
 
-If you have any suggestions for improvement or new features you think might help others, posting Issues and Pull Requests are always welcome.
+If you have any suggestions for improvement or new features you think might help others, posting *Issues* and *Pull Requests* are always welcome.
+
 If you just want to show your support for the project, star it!
 
 **Issues** can be reported on the GitHub [issue tracker](http://github.com/noam09/deluge-telegramer/issues),
