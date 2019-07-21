@@ -882,13 +882,13 @@ class Core(CorePluginBase):
                     else:
                         update.message.reply_text(STRINGS['not_magnet'],
                                                   reply_markup=ReplyKeyboardRemove())
-            except Exception as e:
-                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
                 return ConversationHandler.END
-
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+            # except Exception as e:
+            #     log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
     def find_magnet(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
