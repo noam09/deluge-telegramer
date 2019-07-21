@@ -67,7 +67,7 @@ The Telegram bot can also direct all traffic through a proxy. Proxy addresses sh
 Want to contribute? Great!
 
 If you have any suggestions for improvement or new features you think might help others, posting Issues and Pull Requests are always welcome.
-If you'd like to help out, the next big goal is full support for Windows systems.
+If you just want to show your support for the project, star it!
 
 **Issues** can be reported on the GitHub [issue tracker](http://github.com/noam09/deluge-telegramer/issues),
 just make sure to post the issue with a clear title, description and a log snippet if you know how. Remember to close your issue once it's solved, and if you found the solution yourself, please comment so that others benefit from it.
