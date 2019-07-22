@@ -2,7 +2,7 @@
 #
 # core.py
 #
-# Copyright (C) 2016-2017 Noam <noamgit@gmail.com>
+# Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
 # https://github.com/noam09
 #
 # Much credit to:
@@ -61,12 +61,14 @@ from deluge.log import LOG as log
 def prelog():
     return strftime('%Y-%m-%d %H:%M:%S # Telegramer: ')
 
+
 try:
     import re
     import urllib2
     from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot)
     from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
-                              RegexHandler, ConversationHandler)
+                              RegexHandler, ConversationHandler, BaseFilter)
+    from telegram.utils.request import Request
     import threading
     from base64 import b64encode
     from time import strftime, sleep
@@ -84,23 +86,32 @@ try:
 except ImportError as e:
     log.error(prelog() + 'Import error - %s\n%s' % (str(e), traceback.format_exc()))
 
-CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL = range(6)
 
-DEFAULT_PREFS = {"telegram_token":           "Contact @BotFather and create a new bot",
-                 "telegram_user":            "Contact @MyIDbot",
-                 "telegram_users":           "Contact @MyIDbot",
-                 "telegram_users_notify":    "Contact @MyIDbot",
-                 "telegram_notify_finished": True,
-                 "telegram_notify_added":    True,
-                 "dir1":                     "",
-                 "cat1":                     "",
-                 "dir2":                     "",
-                 "cat2":                     "",
-                 "dir3":                     "",
-                 "cat3":                     ""}
+class FilterMagnets(BaseFilter):
+    def filter(self, message):
+        return 'magnet:?' in message.text
+
+
+CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, RSS_FEED, FILE_NAME, REGEX = range(9)
+
+DEFAULT_PREFS = {"telegram_token":                "Contact @BotFather and create a new bot",
+                 "telegram_user":                 "Contact @MyIDbot",
+                 "telegram_users":                "Contact @MyIDbot",
+                 "telegram_users_notify":         "Contact @MyIDbot",
+                 "telegram_notify_finished":      True,
+                 "telegram_notify_added":         True,
+                 "proxy_url":                     "",
+                 'urllib3_proxy_kwargs_username': "",
+                 "urllib3_proxy_kwargs_password": "",
+                 "regex_exp":                     {},
+                 "categories":                    {},
+                 "minimum_speed":                 int(-1),
+                 "user_timer":                    int(60)
+                 }
+
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-           '(KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'}
+                         '(KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}
 
 STICKERS = {'lincoln':  'BQADBAADGQADyIsGAAE2WnfSWOhfUgI',
             'dali':     'BQADBAADHAADyIsGAAFZfq1bphjqlgI',
@@ -115,10 +126,13 @@ EMOJI = {'seeding':     u'\u23eb',
          'error':       u'\u2757\ufe0f',
          'downloading': u'\u23ec'}
 
+REGEX_SUBS_WORD = r"NAME"
+
 STRINGS = {'no_label': 'No Label',
            'no_category': 'Use Default Settings',
            'cancel': 'Send /cancel at any time to abort',
            'test_success': 'It works!',
+           'torrent_or_rss': 'What would you like to add ?',
            'which_cat': 'Which category/directory?\nRemember to quote ' +
                         'directory paths ("/path/to/dir")',
            'which_label': 'Which label?',
@@ -126,14 +140,24 @@ STRINGS = {'no_label': 'No Label',
            'send_magnet': 'Please send me the magnet link',
            'send_file': 'Please send me the torrent file',
            'send_url': 'Please send me the address',
-           'added': 'Added',
+           'added_rss': 'Successfully added RSS subscription!',
            'eta': 'ETA',
            'error': 'Error',
            'not_magnet': 'Aw man... That\'s not a magnet link',
+           'no_magnet_found': 'Magnet not found in message',
            'not_file': 'Aw man... That\'s not a torrent file',
            'not_url': 'Aw man... Bad link',
            'download_fail': 'Aw man... Download failed',
-           'no_items': 'No items'}
+           'no_items': 'No items',
+           'torrent': 'Torrent',
+           'rss': 'RSS',
+           'which_rss_feed': 'Which RSS feed?',
+           'which_regex': 'Which RSS regex template to use?',
+           'no_rss_found': 'No RSS feeds configured in YaRSS2 plugin',
+           'file_name': 'What to search for in the release name?',
+           'no_name': 'The regex you chose does not contain the "' + REGEX_SUBS_WORD +
+                     '" keyword - please choose another',
+           'no_regex': 'No regex templates found in Telegramer settings'}
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
@@ -156,6 +180,8 @@ INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('time_added', lambda i, s: '*Added:* %s' % fdate(i)))
 
 INFOS = [i[0] for i in INFO_DICT]
+
+filter_magnets = FilterMagnets()
 
 
 def is_int(s):
@@ -182,9 +208,14 @@ def format_torrent_info(torrent):
 
 class Core(CorePluginBase):
     def __init__(self, *args):
-        self.core = component.get('Core')
+        self.opts = {}
         self.bot = None
         self.updater = None
+        self.is_rss = False
+        self.yarss_data = YarssData()
+        self.yarss_config = None
+        self.yarss_plugin = None
+
         log.debug(prelog() + 'Initialize class')
         super(Core, self).__init__(*args)
 
@@ -195,8 +226,9 @@ class Core(CorePluginBase):
                                                              DEFAULT_PREFS)
             self.whitelist = []
             self.notifylist = []
-            self.set_dirs = {}
             self.label = None
+            self.magnet_only = False
+            self.check_speed_timer = None
             self.COMMANDS = {'list':        self.cmd_list,
                              'down':        self.cmd_down,
                              'downloading': self.cmd_down,
@@ -211,6 +243,7 @@ class Core(CorePluginBase):
                              'help':        self.cmd_help,
                              'start':       self.cmd_help,
                              'reload':      self.restart_telegramer,
+                             # 'rss':         self.cmd_add_rss,
                              'commands':    self.cmd_help}
 
             log.debug(prelog() + 'Initialize bot')
@@ -236,10 +269,26 @@ class Core(CorePluginBase):
                         log.debug(prelog() + 'Notify: ' + str(self.notifylist))
 
                 reactor.callLater(2, self.connect_events)
-
-                self.bot = Bot(self.config['telegram_token'])
+                # Slow torrent notifications
+                if self.config['minimum_speed'] > -1:
+                    try:
+                        self.check_speed_timer = LoopingCall(self.check_speed)
+                        self.check_speed_timer.start(int(self.config['user_timer']), now=False)
+                    except Exception as e:
+                        log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+                # Proxy args
+                REQUEST_KWARGS = {
+                    'proxy_url': self.config['proxy_url'],
+                    'urllib3_proxy_kwargs': {
+                        'username': self.config['urllib3_proxy_kwargs_username'],
+                        'password': self.config['urllib3_proxy_kwargs_password'],
+                    }
+                }
+                bot_request = Request(**REQUEST_KWARGS)
+                self.bot = Bot(self.config['telegram_token'], request=bot_request)
                 # Create the EventHandler and pass it bot's token.
-                self.updater = Updater(self.config['telegram_token'])
+                # self.updater = Updater(self.config['telegram_token'], bot=self.bot, request_kwargs=REQUEST_KWARGS)
+                self.updater = Updater(bot=self.bot, request_kwargs=REQUEST_KWARGS)
                 # Get the dispatcher to register handlers
                 dp = self.updater.dispatcher
                 # Add conversation handler with the different states
@@ -255,8 +304,35 @@ class Core(CorePluginBase):
                     },
                     fallbacks=[CommandHandler('cancel', self.cancel)]
                 )
+                # Add torrent paused
+                conv_handler_paused = ConversationHandler(
+                    entry_points=[CommandHandler('addpaused', self.add_paused)],
+                    states={
+                        CATEGORY: [MessageHandler(Filters.text, self.category)],
+                        SET_LABEL: [MessageHandler(Filters.text, self.set_label)],
+                        TORRENT_TYPE: [MessageHandler(Filters.text, self.torrent_type)],
+                        ADD_MAGNET: [MessageHandler(Filters.text, self.add_magnet)],
+                        ADD_TORRENT: [MessageHandler(Filters.document, self.add_torrent)],
+                        ADD_URL: [MessageHandler(Filters.text, self.add_url)]
+                    },
+                    fallbacks=[CommandHandler('cancel', self.cancel)]
+                )
+                conv_handler_rss = ConversationHandler(
+                    entry_points=[CommandHandler('rss', self.cmd_add_rss)],
+                    states={
+                        RSS_FEED: [MessageHandler(Filters.text, self.rss_feed)],
+                        REGEX: [MessageHandler(Filters.text, self.regex)],
+                        FILE_NAME: [MessageHandler(Filters.text, self.rss_file_name)],
+                        CATEGORY: [MessageHandler(Filters.text, self.category)]
+                    },
+                    fallbacks=[CommandHandler('cancel', self.cancel)]
+                )
 
                 dp.add_handler(conv_handler)
+                dp.add_handler(conv_handler_paused)
+                dp.add_handler(conv_handler_rss)
+                dp.add_handler(MessageHandler(Filters.document, self.add_torrent))
+                dp.add_handler(MessageHandler(filter_magnets, self.find_magnet))
 
                 for key, value in self.COMMANDS.iteritems():
                     dp.add_handler(CommandHandler(key, value))
@@ -276,7 +352,7 @@ class Core(CorePluginBase):
                 #######################################################################
                 # Start the Bot
                 self.updater.start_polling(poll_interval=0.05)
-
+                # self.updater.idle() # blocks
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -285,6 +361,8 @@ class Core(CorePluginBase):
 
     def disable(self):
         try:
+            if self.check_speed_timer:
+                self.check_speed_timer.stop()
             log.info(prelog() + 'Disable')
             reactor.callLater(2, self.disconnect_events)
             self.whitelist = []
@@ -297,45 +375,47 @@ class Core(CorePluginBase):
         pass
 
     def telegram_send(self, message, to=None, parse_mode=None):
-        if 1:  # str(update.message.chat.id) in self.whitelist:
-            if self.bot:
-                log.debug(prelog() + 'Send message')
-                if not to:
-                    to = self.config['telegram_user']
-                else:
-                    log.debug(prelog() + 'send_message, to set')
-                if not isinstance(to, (list,)):
-                    log.debug(prelog() + 'Convert to to list')
-                    to = [to]
-                log.debug(prelog() + "[to] " + str(to))
-                for usr in to:
-                    # Every outgoing message filtered here
-                    if str(usr) in self.whitelist or str(usr) in self.notifylist:
-                        log.debug(prelog() + "to: " + str(usr))
-                        if len(message) > 4096:
-                            log.debug(prelog() +
-                                      'Message length is {}'.format(str(len(message))))
-                            tmp = ''
-                            for line in message.split('\n'):
-                                tmp += line + '\n'
-                                if len(tmp) > 4000:
-                                    msg = self.bot.send_message(usr, tmp,
-                                                                parse_mode='Markdown')
-                                    tmp = ''
-                        else:
-                            if parse_mode:
-                                msg = self.bot.send_message(usr, message,
+        if self.bot:
+            log.debug(prelog() + 'Send message')
+            if not to:
+                log.debug(prelog() + '"to" not set')
+                to = self.config['telegram_user']
+            else:
+                log.debug(prelog() + 'send_message, to set')
+            if not isinstance(to, (list,)):
+                log.debug(prelog() + 'Convert "to" to list')
+                to = [to]
+            log.debug(prelog() + "[to] " + str(to))
+            for usr in to:
+                # Every outgoing message filtered here
+                if str(usr) in self.whitelist or str(usr) in self.notifylist:
+                    log.debug(prelog() + "to: " + str(usr))
+                    if len(message) > 4096:
+                        log.debug(prelog() +
+                                  'Message length is {}'.format(str(len(message))))
+                        tmp = ''
+                        for line in message.split('\n'):
+                            tmp += line + '\n'
+                            if len(tmp) > 4000:
+                                msg = self.bot.send_message(usr, tmp,
                                                             parse_mode='Markdown')
-                            else:
-                                msg = self.bot.send_message(usr, message)
-            log.debug(prelog() + 'return')
-            return
+                                tmp = ''
+                    else:
+                        if parse_mode:
+                            msg = self.bot.send_message(usr, message,
+                                                        parse_mode='Markdown')
+                        else:
+                            msg = self.bot.send_message(usr, message)
+        log.debug(prelog() + 'return')
+        return
 
     def telegram_poll_start(self):
         # Skip this - for testing only
         pass
         """Like non_stop, this will run forever
         this way suspend/sleep won't kill the thread"""
+
+        """
         while True:
             try:
                 if self.updater:
@@ -351,10 +431,13 @@ class Core(CorePluginBase):
                 log.error(prelog() + str(e) + '\n' +
                           traceback.format_exc() + ' - Sleeping...')
                 sleep(10)
+        """
 
     def telegram_poll_stop(self):
         try:
             log.debug(prelog() + 'Stop polling')
+            # if self.updater.dispatcher:
+            #     self.updater.dispatcher.stop()
             if self.updater:
                 self.updater.stop()
         except Exception as e:
@@ -366,6 +449,9 @@ class Core(CorePluginBase):
                      % str(update.message.chat.id))
             update.message.reply_text('Operation cancelled',
                                       reply_markup=ReplyKeyboardRemove())
+            self.is_rss = False
+            self.magnet_only = False
+            self.yarss_data.clear()
             return ConversationHandler.END
 
     def cmd_help(self, bot, update):
@@ -373,6 +459,8 @@ class Core(CorePluginBase):
         if str(update.message.chat.id) in self.whitelist:
             log.debug(prelog() + str(update.message.chat.id) + " in whitelist")
             help_msg = ['/add - Add a new torrent',
+                        '/addpaused - Add a new torrent paused',
+                        '/rss - Add a new RSS filter',
                         '/list - List all torrents',
                         '/down - List downloading torrents',
                         '/up - List uploading torrents',
@@ -420,106 +508,89 @@ class Core(CorePluginBase):
     def add(self, bot, update):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
-            try:
-                self.set_dirs = {}
-                self.opts = {}
-                keyboard_options = []
-                """Currently there are 3 possible categories so
-                loop through cat1-3 and dir1-3, check if directories exist
-                """
-                for i in range(3):
-                    i = i+1
-                    if os.path.isdir(self.config['dir'+str(i)]):
-                        log.debug(prelog() + self.config['cat'+str(i)] +
-                                  ' ' + self.config['dir'+str(i)])
-                        self.set_dirs[self.config['cat'+str(i)]] = \
-                            self.config['dir'+str(i)]
+            self.opts = {}
+            self.is_rss = False
+            self.magnet_only = False
+            return self.prepare_categories(bot, update)
+            """
+            if "YaRSS2" in component.get('Core').get_available_plugins():
+                return self.prepare_torrent_or_rss(bot, update)
+            else:
+                return self.prepare_categories(bot, update)
+            """
 
-                if self.set_dirs:
-                    for k in self.set_dirs.keys():
-                        log.debug(prelog() + k)
-                        keyboard_options.append([k])
-                keyboard_options.append([STRINGS['no_category']])
+    def add_paused(self, bot, update):
+        # log.error(type(update.message.chat.id) + str(update.message.chat.id))
+        if str(update.message.chat.id) in self.whitelist:
+            self.opts = {}
+            self.opts["addpaused"] = True
+            self.is_rss = False
+            self.magnet_only = False
+            return self.prepare_categories(bot, update)
 
-                update.message.reply_text(
-                    '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
+    def cmd_add_rss(self, bot, update):
+        # log.error(type(update.message.chat.id) + str(update.message.chat.id))
+        if str(update.message.chat.id) in self.whitelist:
+            if "YaRSS2" in component.get('Core').get_available_plugins():
+                return self.add_rss(bot, update)
+            else:
+                update.message.reply_text('YaRSS2 plugin not available',
+                                          reply_markup=ReplyKeyboardRemove())
+                self.is_rss = False
+                self.yarss_data.clear()
+                return ConversationHandler.END
+                # return self.prepare_categories(bot, update)
 
-                return CATEGORY
+    # def prepare_torrent_or_rss(self, bot, update):
+    #     try:
+    #         keyboard_options = [[STRINGS['torrent']], [STRINGS['rss']]]
+    #         update.message.reply_text(
+    #             '%s\n%s' % (STRINGS['torrent_or_rss'], STRINGS['cancel']),
+    #             reply_markup=ReplyKeyboardMarkup(keyboard_options,
+    #                                              one_time_keyboard=True))
+    #         return TORRENT_OR_RSS
+    #
+    #     except Exception as e:
+    #         log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-            except Exception as e:
-                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+    def torrent_or_rss(self, bot, update):
+        try:
+            if str(update.message.chat.id) not in self.whitelist:
+                return
 
-    def category(self, bot, update):
+            if STRINGS['torrent'] == update.message.text:
+                return self.prepare_categories(bot, update)
+
+            if STRINGS['rss'] == update.message.text:
+                return self.add_rss(bot, update)
+
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def prepare_categories(self, bot, update):
+        try:
+            keyboard_options = []
+            filtered_dict = {c: d for c, d in self.config["categories"].iteritems() if os.path.isdir(d)}
+            missing = {c: d for c, d in self.config["categories"].iteritems() if not os.path.isdir(d)}
+            if len(missing) > 0:
+                for k in missing.keys():
+                    log.error(prelog() + "Missing directory for category {} ({})".format(k, missing[k]))
+            for c, d in filtered_dict.iteritems():
+                log.error(prelog() + c + ' : ' + d)
+                keyboard_options.append([c])
+
+            keyboard_options.append([STRINGS['no_category']])
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['which_cat'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                 one_time_keyboard=True))
+            return CATEGORY
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def prepare_torrent_type(self, update):
         if str(update.message.chat.id) in self.whitelist:
             try:
-                if update.message.text == '/add' or \
-                   update.message.text == STRINGS['no_category']:
-                    self.opts = {}
-                else:
-                    for i in range(3):
-                        i = i+1
-                        if self.config['cat'+str(i)] == update.message.text:
-                            cat_id = str(i)
-                            # move_completed_path vs download_location
-                            self.opts = {'move_completed_path':
-                                         self.config['dir'+cat_id],
-                                         'move_completed': True}
-                    # If none of the existing categories were selected,
-                    # maybe user is trying to save to a new directory
-                    if not self.opts:
-                        try:
-                            log.debug(prelog() + 'Custom directory entered: ' +
-                                      str(update.message.text))
-                            if update.message.text[0] == '"' and \
-                               update.message.text[-1] == '"':
-                                otherpath = os.path.abspath(os.path.realpath(
-                                    update.message.text[1:-1]))
-                                log.debug(prelog() +
-                                          'Attempt to create and save to: ' +
-                                          str(otherpath))
-                                if not os.path.exists(otherpath):
-                                    os.makedirs(otherpath)
-                                self.opts = {'move_completed_path': otherpath,
-                                             'move_completed': True}
-                        except Exception as e:
-                            log.error(prelog() + str(e) + '\n' +
-                                      traceback.format_exc())
-
-                keyboard_options = []
-                self.label = None
-                try:
-                    component.get('Core').enable_plugin('Label')
-                    label_plugin = component.get('CorePlugin.Label')
-                    if label_plugin:
-                        # Create label if neccessary
-                        for g in label_plugin.get_labels():
-                            keyboard_options.append([g])
-                except Exception as e:
-                    log.debug(prelog() + 'Enabling Label plugin failed')
-                    log.error(prelog() + str(e) + '\n' +
-                              traceback.format_exc())
-                keyboard_options.append([STRINGS['no_label']])
-
-                update.message.reply_text(
-                    STRINGS['which_label'],
-                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
-                                                     one_time_keyboard=True))
-
-                return SET_LABEL
-
-            except Exception as e:
-                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
-
-    def set_label(self, bot, update):
-        if str(update.message.chat.id) in self.whitelist:
-            try:
-                user = update.message.chat.id
-
-                self.label = update.message.text
-                log.debug(prelog() + "Label: %s" % (update.message.text))
-
                 # Request torrent type
                 keyboard_options = []
                 keyboard_options.append(['Magnet'])
@@ -531,6 +602,215 @@ class Core(CorePluginBase):
                     reply_markup=ReplyKeyboardMarkup(keyboard_options,
                                                      one_time_keyboard=True))
                 return TORRENT_TYPE
+            except Exception as e:
+                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def category(self, bot, update):
+        if str(update.message.chat.id) in self.whitelist:
+            try:
+                if STRINGS['no_category'] == update.message.text:
+                    self.opts = self.opts
+                else:
+                    if update.message.text in self.config["categories"].keys():
+                        # move_completed_path vs download_location
+                        self.opts["move_completed_path"] = self.config["categories"][update.message.text]
+                        self.opts["move_completed"] = True
+
+                    # If none of the existing categories were selected,
+                    # maybe user is trying to save to a new directory
+                    else:  # if not self.opts:
+                        try:
+                            log.debug(prelog() + 'Custom directory entered: ' +
+                                      str(update.message.text))
+                            if update.message.text[0] == '"' and \
+                                    update.message.text[-1] == '"':
+                                otherpath = os.path.abspath(os.path.realpath(
+                                    update.message.text[1:-1]))
+                                log.debug(prelog() +
+                                          'Attempt to create and save to: ' +
+                                          str(otherpath))
+                                if not os.path.exists(otherpath):
+                                    log.debug(prelog() + 'mkdir {}'.format(otherpath))
+                                    os.makedirs(otherpath)
+                                self.opts["move_completed_path"] = otherpath
+                                self.opts["move_completed"] = True
+                        except Exception as e:
+                            log.error(prelog() + str(e) + '\n' +
+                                      traceback.format_exc())
+                if self.is_rss:
+                    log.debug(prelog() + "is_rss, calling RSS_APPLY")
+                    return self.rss_apply(bot, update)
+
+                log.debug(prelog() + "Label segment")
+                keyboard_options = []
+                self.label = None
+                try:
+                    component.get('Core').enable_plugin('Label')
+                    label_plugin = component.get('CorePlugin.Label')
+                    if label_plugin:
+                        # Create label if neccessary
+                        for g in label_plugin.get_labels():
+                            keyboard_options.append([g])
+                except Exception as e:
+                    log.debug(prelog() + 'Enabling Label plugin failed')
+                    log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+                keyboard_options.append([STRINGS['no_label']])
+                update.message.reply_text(
+                    STRINGS['which_label'],
+                    reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                     one_time_keyboard=True))
+
+                return SET_LABEL
+
+                """
+                if len(keyboard_options) > 0:
+                    keyboard_options.append([STRINGS['no_label']])
+
+                    update.message.reply_text(
+                        STRINGS['which_label'],
+                        reply_markup=ReplyKeyboardMarkup(keyboard_options,
+                                                         one_time_keyboard=True))
+                    return SET_LABEL
+                else:
+                    if self.is_rss:
+                        return self.prepare_rss_feed(bot, update)
+                    else:
+                        return self.prepare_torrent_type(update)
+                """
+
+            except Exception as e:
+                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def prepare_rss_feed(self, bot, update):
+        if self.yarss_plugin is None:
+            self.yarss_plugin = component.get('CorePlugin.YaRSS2')
+        if self.yarss_plugin:
+            self.yarss_config = self.yarss_plugin.get_config()
+            feeds = {}
+            # Create dictionary with feed name:url
+            for rss_feed in self.yarss_config["rssfeeds"].values():
+                feeds[rss_feed["name"]] = rss_feed["url"]
+            # If feed(s) found
+            count = 0
+            if len(feeds) > 0:
+                count = count + 1
+                feedlist = "\n".join(["{}) [{}]({})".format(count, f, feeds[f]) for f in feeds.keys()])
+                keyboard_options = [feeds.keys()]
+                update.message.reply_text(
+                    '%s\n\n%s\n\n%s' % (STRINGS['which_rss_feed'], feedlist, STRINGS['cancel']),
+                    reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True),
+                    parse_mode='Markdown')
+                return RSS_FEED
+            # If no feed(s) found
+            else:
+                log.debug(prelog() + STRINGS['no_rss_found'])
+                update.message.reply_text('%s' % (STRINGS['no_rss_found']),
+                                          reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
+
+        return ConversationHandler.END
+
+    def rss_feed(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+        self.is_rss = True
+        try:
+            rss_feed = next(rss_feed for rss_feed in self.yarss_config["rssfeeds"].values()
+                            if rss_feed["name"] == update.message.text)
+
+            self.yarss_data.subscription_data["rssfeed_key"] = rss_feed["key"]
+            log.debug(prelog() + 'User chose rss_feed "' + rss_feed["name"] + '"')
+
+            log.debug(self.config["regex_exp"])
+
+            keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys() if regex_name != '']
+
+            if len(keyboard_options) > 0:
+                update.message.reply_text(
+                    '%s\n%s' % (STRINGS['which_regex'], STRINGS['cancel']),
+                    reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+                return REGEX
+            else:
+                update.message.reply_text(
+                    '%s\n%s' % (STRINGS['no_regex'], STRINGS['cancel']),
+                    reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def regex(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+        if REGEX_SUBS_WORD in self.config["regex_exp"][update.message.text]:
+            self.yarss_data.subscription_data["regex_include"] = self.config["regex_exp"][update.message.text]
+
+            log.debug(prelog() + 'User chose regex ' + update.message.text)
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['file_name'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardRemove())
+            return FILE_NAME
+        else:
+            keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys()]
+            update.message.reply_text(
+                '%s\n%s' % (STRINGS['no_name'], STRINGS['cancel']),
+                reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
+            return REGEX
+
+    def rss_file_name(self, bot, update):
+        if not str(update.message.chat.id) in self.whitelist:
+            return
+
+        log.debug(prelog() + update.message.text)
+        update.message.text = re.sub(' +', ' ', update.message.text)
+
+        self.yarss_data.subscription_data["regex_include"] = re.sub(REGEX_SUBS_WORD, update.message.text,
+                                                                    self.yarss_data.subscription_data["regex_include"])
+        self.yarss_data.subscription_data["regex_include"] = re.sub(r" ", ".*",
+                                                                    self.yarss_data.subscription_data["regex_include"])
+        log.debug(prelog() + "Adding regex " + self.yarss_data.subscription_data["regex_include"])
+
+        self.yarss_data.subscription_data["label"] = self.label
+        self.yarss_data.subscription_data["name"] = update.message.text
+
+        return self.prepare_categories(bot, update)
+
+    def rss_apply(self, bot, update):
+        log.debug(prelog() + "entered rss_apply")
+        if str(update.message.chat.id) in self.whitelist:
+            log.debug(prelog() + "in whitelist")
+            try:
+                log.debug(prelog() + "rss_apply opts: {}".format(self.opts))
+                if len(self.opts) > 0:
+                    log.debug(prelog() + "Setting download location: " + self.opts["move_completed_path"])
+                    self.yarss_data.subscription_data["download_location"] = self.opts["move_completed_path"]
+                r = self.yarss_data.addRss()
+                if r:
+                    update.message.reply_text('%s' % (STRINGS['added_rss']),
+                                              reply_markup=ReplyKeyboardRemove())
+                return ConversationHandler.END
+            except Exception as e:
+                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+        else:
+            log.debug(prelog() + "not in whitelist")
+
+    def set_label(self, bot, update):
+        if str(update.message.chat.id) in self.whitelist:
+            try:
+                # user = update.message.chat.id
+                self.label = update.message.text
+                log.debug(prelog() + "Label: %s" % (update.message.text))
+
+                return self.prepare_torrent_type(update)
+
+                """
+                # Request torrent type
+                if self.is_rss:
+                    return self.prepare_rss_feed(bot, update)
+                else:
+                    return self.prepare_torrent_type(update)
+                """
+
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -566,10 +846,24 @@ class Core(CorePluginBase):
     def add_magnet(self, bot, update):
         if str(update.message.chat.id) in self.whitelist:
             try:
-                user = update.message.chat.id
-                log.debug("addmagnet of %s: %s" % (str(user), update.message.text))
-
-                try:
+                if self.magnet_only:
+                    # Reset bool
+                    self.magnet_only = False
+                    m = re.findall(r'magnet:\?.*\b', update.message.text)
+                    if len(m) == 1:
+                        metainfo = m[0]
+                        self.opts = {}
+                        if is_magnet(metainfo):
+                            log.debug(prelog() + 'Adding torrent from magnet ' +
+                                      'URI `%s` using options `%s` ...',
+                                      metainfo, self.opts)
+                            tid = component.get('Core').add_torrent_magnet(metainfo, self.opts)
+                            return ConversationHandler.END
+                    else:
+                        log.error("Magnet not found in message")
+                else:
+                    user = update.message.chat.id
+                    log.debug("addmagnet of %s: %s" % (str(user), update.message.text))
                     # options = None
                     metainfo = update.message.text
                     """Adds a torrent with the given options.
@@ -583,11 +877,35 @@ class Core(CorePluginBase):
                         log.debug(prelog() + 'Adding torrent from magnet ' +
                                   'URI `%s` using options `%s` ...',
                                   metainfo, self.opts)
-                        tid = self.core.add_torrent_magnet(metainfo, self.opts)
+                        tid = component.get('Core').add_torrent_magnet(metainfo, self.opts)
                         self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['not_magnet'],
                                                   reply_markup=ReplyKeyboardRemove())
+
+                return ConversationHandler.END
+            except Exception as e:
+                log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+            # except Exception as e:
+            #     log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def find_magnet(self, bot, update):
+        if str(update.message.chat.id) in self.whitelist:
+            try:
+                log.debug("Find magnets in message")
+                try:
+                    # options = None
+                    m = re.findall(r'magnet:\?.*\b', update.message.text)
+                    if len(m) > 0:
+                        mag = m[0]
+                        self.magnet_only = True
+                        return self.add_magnet(bot, update)
+                    else:
+                        log.debug("Magnet not found in message")
+                        update.message.reply_text(STRINGS['no_magnet_found'],
+                                                  reply_markup=ReplyKeyboardRemove())
+                        return ConversationHandler.END
                 except Exception as e:
                     log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -617,7 +935,7 @@ class Core(CorePluginBase):
                             self.opts = {}
                         log.info(prelog() + 'Adding torrent from base64 string' +
                                  'using options `%s` ...', self.opts)
-                        tid = self.core.add_torrent_file(None, metainfo, self.opts)
+                        tid = component.get('Core').add_torrent_file(None, metainfo, self.opts)
                         self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['download_fail'],
@@ -651,7 +969,7 @@ class Core(CorePluginBase):
                                 self.opts = {}
                             log.info(prelog() + 'Adding torrent from base64 string' +
                                      'using options `%s` ...', self.opts)
-                            tid = self.core.add_torrent_file(None, metainfo, self.opts)
+                            tid = component.get('Core').add_torrent_file(None, metainfo, self.opts)
                             self.apply_label(tid)
                         else:
                             update.message.reply_text(STRINGS['download_fail'],
@@ -668,6 +986,15 @@ class Core(CorePluginBase):
 
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+
+    def add_rss(self, bot, update):
+        try:
+            component.get('Core').enable_plugin('YaRSS2')
+            self.is_rss = True
+            return self.prepare_rss_feed(bot, update)
+            # return self.prepare_categories(bot, update)
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
     def apply_label(self, tid):
         try:
@@ -688,6 +1015,18 @@ class Core(CorePluginBase):
     def update_stats(self):
         log.debug('update_stats')
 
+    def check_speed(self):
+        log.debug("Minimum speed: %s", self.config["minimum_speed"])
+        try:
+            for t in component.get('TorrentManager').torrents.values():
+                if t.get_status(("state",))["state"] == "Downloading":
+                    if t.status.download_rate < (self.config['minimum_speed'] * 1024):
+                        message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})
+                        self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
+        except Exception as e:
+            log.error(prelog() + 'Unexpected behavior %s.' % str(e))
+        return
+
     def connect_events(self):
         event_manager = component.get('EventManager')
         event_manager.register_event_handler('TorrentFinishedEvent',
@@ -706,9 +1045,19 @@ class Core(CorePluginBase):
         if (self.config['telegram_notify_added'] is False):
             return
         try:
+            # get_torrent_status
             # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status({})
+            # Check if label shows up here
+            log.debug("get_status for {}".format(torrent_id))
+            log.debug(torrent_status)
+            # Check if custom message
+            # if custom msg:
+            #   check length
+            #   check markdown
+            #   
+            # else:
             message = _('Added Torrent *%(name)s*') % torrent_status
             log.info(prelog() + 'Sending torrent added message to ' +
                      str(self.notifylist))
@@ -742,9 +1091,11 @@ class Core(CorePluginBase):
         log.debug(prelog() + 'Set config')
         dirty = False
         for key in config.keys():
-            if self.config[key] != config[key]:
+            if ("categories" == key and cmp(self.config[key], config[key])) or \
+                    self.config[key] != config[key]:
                 dirty = True
                 self.config[key] = config[key]
+
         if dirty:
             log.info(prelog() + 'Config changed, reloading')
             self.config.save()
@@ -771,4 +1122,45 @@ class Core(CorePluginBase):
         log.info(prelog() + 'Send test')
         self.bot.sendSticker(self.config['telegram_user'],
                              choice(list(STICKERS.values())))
-        self.telegram_send(STRINGS['test_success'])
+        self.telegram_send(STRINGS['test_success'], to=self.config['telegram_user'])
+
+
+class YarssData:
+
+    def __init__(self):
+        self.subscription_data = {}
+        self.subscription_data["regex_exclude"] = ""
+        self.subscription_data["regex_include_ignorecase"] = True
+        self.subscription_data["regex_exclude_ignorecase"] = False
+        self.subscription_data["custom_text_lines"] = ""
+        self.subscription_data["last_match"] = ""
+        self.subscription_data["ignore_timestamp"] = False
+        self.subscription_data["active"] = True
+        self.subscription_data["max_download_speed"] = -2
+        self.subscription_data["max_upload_speed"] = -2
+        self.subscription_data["max_connections"] = -2
+        self.subscription_data["max_upload_slots"] = -2
+        self.subscription_data["add_torrents_in_paused_state"] = "Default"
+        self.subscription_data["auto_managed"] = "Default"
+        self.subscription_data["sequential_download"] = "Default"
+        self.subscription_data["prioritize_first_last_pieces"] = "Default"
+        # Get notifications from notifications list
+        self.subscription_data["email_notifications"] = {}
+        self.subscription_data["move_completed"] = ""
+        self.clear()
+
+    def clear(self):
+        self.subscription_data["name"] = ""
+        self.subscription_data["label"] = ""
+        self.subscription_data["rssfeed_key"] = ""
+        self.subscription_data["regex_include"] = ""
+        self.subscription_data["download_location"] = ""
+
+    def addRss(self):
+        try:
+            self.yarss2_plugin = component.get('CorePlugin.YaRSS2')
+            self.yarss2_plugin.save_subscription(subscription_data=self.subscription_data, delete=False)
+            return True
+        except Exception as e:
+            log.error(prelog() + str(e) + '\n' + traceback.format_exc())
+            return False

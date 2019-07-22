@@ -3,7 +3,7 @@ Script: telegramer.js
     The client-side javascript code for the Telegramer plugin.
 
 Copyright:
-    (C) Noam 2016-2017 <noamgit@gmail.com>
+    Copyright (C) 2016-2019 Noam <noamgit@gmail.com>
     https://github.com/noam09
 
     Much credit to:
@@ -159,6 +159,53 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             autoWidth: true,
             value: ''
         }));
+        fieldset = this.add({
+            xtype: 'fieldset',
+            title: _('Slow torrents options'),
+            autoHeight: true,
+            defaultType: 'textfield',
+        });
+        this.opts.bind('minimum_speed', fieldset.add({
+            fieldLabel: _('Minimum download speed (KB/s) -1 means no minimum'),
+            anchor:'100%',
+            name: 'minimum_speed',
+            id: 'minimum_speed',
+            autoWidth: true,
+            value: '-1'
+        }));
+        this.opts.bind('user_timer', fieldset.add({
+            fieldLabel: _('Check for slow torrents every... (seconds)'),
+            anchor:'100%',
+            name: 'user_timer',
+            id: 'user_timer',
+            autoWidth: true,
+            value: '60'
+        }));
+        fieldset = this.add({
+            xtype: 'fieldset',
+            title: _('Proxy Configuration'),
+            autoHeight: true,
+            autoWidth: true,
+            defaultType: 'textfield'
+        });
+        this.opts.bind('proxy_url', fieldset.add({
+            fieldLabel: _('Proxy URL'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'proxy_url'
+        }));
+        this.opts.bind('urllib3_proxy_kwargs_username', fieldset.add({
+            fieldLabel: _('Username'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'urllib3_proxy_kwargs_username'
+        }));
+        this.opts.bind('urllib3_proxy_kwargs_password', fieldset.add({
+            fieldLabel: _('Password'),
+            anchor: '100%',
+            autoWidth: true,
+            name: 'urllib3_proxy_kwargs_password'
+        }));
         this.teleTester = this.add({
             fieldLabel: _(''),
             name: 'telegram_test',
@@ -216,6 +263,21 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             if (!Ext.isEmpty(config['telegram_notify_finished'])) {
                 config['telegram_notify_finished'] = config['telegram_notify_finished'];
             }
+            if (!Ext.isEmpty(config['minimum_speed'])) {
+                config['minimum_speed'] = config['minimum_speed'];
+            }
+            if (!Ext.isEmpty(config['user_timer'])) {
+                config['user_timer'] = config['user_timer'];
+            }
+            if (!Ext.isEmpty(config['proxy_url'])) {
+                config['proxy_url'] = config['proxy_url']
+            }
+            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_username'])) {
+                config['urllib3_proxy_kwargs_username'] = config['urllib3_proxy_kwargs_username']
+            }
+            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_password'])) {
+                config['urllib3_proxy_kwargs_password'] = config['urllib3_proxy_kwargs_password']
+            }
             if (!Ext.isEmpty(config['cat1'])) {
                 config['cat1'] = config['cat1'];
             }
@@ -257,6 +319,21 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             }
             if (!Ext.isEmpty(changed['telegram_notify_finished'])) {
             changed['telegram_notify_finished'] = changed['telegram_notify_finished'];
+            }
+            if (!Ext.isEmpty(changed['minimum_speed'])) {
+                changed['minimum_speed'] = changed['minimum_speed'];
+            }
+            if (!Ext.isEmpty(changed['user_timer'])) {
+                changed['user_timer'] = changed['user_timer'];
+            }
+            if (!Ext.isEmpty(changed['proxy_url'])) {
+            changed['proxy_url'] = changed['proxy_url']
+            }
+            if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_username'])) {
+            changed['urllib3_proxy_kwargs_username'] = changed['urllib3_proxy_kwargs_username']
+            }
+            if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_password'])) {
+            changed['urllib3_proxy_kwargs_password'] = changed['urllib3_proxy_kwargs_password']
             }
             if (!Ext.isEmpty(changed['cat1'])) {
             changed['cat1'] = changed['cat1'];

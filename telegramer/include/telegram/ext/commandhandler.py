@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2017
+# Copyright (C) 2015-2018
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,10 +19,10 @@
 """This module contains the CommandHandler class."""
 import warnings
 
-## REMREM from future.utils import string_types
+# REMREM from future.utils import string_types
 try:
     from future.utils import string_types
-except:
+except Exception as e:
     pass
 
 try:
@@ -61,7 +61,7 @@ class CommandHandler(Handler):
 
     Note:
         :attr:`pass_user_data` and :attr:`pass_chat_data` determine whether a ``dict`` you
-        can use to keep any data in will be sent to the :attr:`callback` function.. Related to
+        can use to keep any data in will be sent to the :attr:`callback` function. Related to
         either the user or the chat that the update was sent in. For each update from the same user
         or in the same chat, it will be the same ``dict``.
 
@@ -142,25 +142,27 @@ class CommandHandler(Handler):
                 and (update.message or update.edited_message and self.allow_edited)):
             message = update.message or update.edited_message
 
-            if message.text:
-                command = message.text[1:].split(' ')[0].split('@')
-                command.append(
-                    message.bot.username)  # in case the command was send without a username
+            if message.text and message.text.startswith('/') and len(message.text) > 1:
+                first_word = message.text_html.split(None, 1)[0]
+                if len(first_word) > 1 and first_word.startswith('/'):
+                    command = first_word[1:].split('@')
+                    command.append(
+                        message.bot.username)  # in case the command was sent without a username
 
-                if self.filters is None:
-                    res = True
-                elif isinstance(self.filters, list):
-                    res = any(func(message) for func in self.filters)
-                else:
-                    res = self.filters(message)
+                    if not (command[0].lower() in self.command
+                            and command[1].lower() == message.bot.username.lower()):
+                        return False
 
-                return res and (message.text.startswith('/') and command[0].lower() in self.command
-                                and command[1].lower() == message.bot.username.lower())
-            else:
-                return False
+                    if self.filters is None:
+                        res = True
+                    elif isinstance(self.filters, list):
+                        res = any(func(message) for func in self.filters)
+                    else:
+                        res = self.filters(message)
 
-        else:
-            return False
+                    return res
+
+        return False
 
     def handle_update(self, update, dispatcher):
         """Send the update to the :attr:`callback`.
