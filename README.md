@@ -1,4 +1,4 @@
-# <p align="center">Telegramer</p>
+# Telegramer
 
 <p align="center"><a href="https://github.com/noam09/deluge-telegramer" title="Telegramer"><img src="https://i.imgur.com/xXIPX44.png" alt="Telegramer"></a></p>
 
