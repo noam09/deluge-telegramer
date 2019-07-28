@@ -244,6 +244,26 @@
               </packing>
             </child>
             <child>
+              <widget class="GtkEntry" id="message_added">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="tooltip" translatable="yes">Message to send when new torrents are added</property>
+                <property name="max_length">80</property>
+                <property name="invisible_char">●</property>
+                <property name="text" translatable="yes">Added Torrent *TORRENTNAME*</property>
+                <property name="invisible_char_set">True</property>
+                <property name="primary_icon_activatable">False</property>
+                <property name="secondary_icon_activatable">False</property>
+                <property name="primary_icon_sensitive">True</property>
+                <property name="secondary_icon_sensitive">True</property>
+              </widget>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">7</property>
+              </packing>
+            </child>
+            <child>
               <widget class="GtkCheckButton" id="telegram_notify_finished">
                 <property name="label" translatable="yes">Send Telegram notification when torrents finish</property>
                 <property name="visible">True</property>
@@ -256,7 +276,27 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="padding">8</property>
-                <property name="position">7</property>
+                <property name="position">8</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkEntry" id="message_finished">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="tooltip" translatable="yes">Message to send when torrents finish downloading</property>
+                <property name="max_length">80</property>
+                <property name="invisible_char">●</property>
+                <property name="text" translatable="yes">Finished Downloading *TORRENTNAME*</property>
+                <property name="invisible_char_set">True</property>
+                <property name="primary_icon_activatable">False</property>
+                <property name="secondary_icon_activatable">False</property>
+                <property name="primary_icon_sensitive">True</property>
+                <property name="secondary_icon_sensitive">True</property>
+              </widget>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">9</property>
               </packing>
             </child>
             <child>
@@ -271,7 +311,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">8</property>
+                <property name="position">10</property>
               </packing>
             </child>
             <child>
@@ -431,7 +471,7 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="padding">8</property>
-                <property name="position">9</property>
+                <property name="position">11</property>
               </packing>
             </child>
             <child>
@@ -446,7 +486,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">10</property>
+                <property name="position">12</property>
               </packing>
             </child>
             <child>
@@ -492,7 +532,7 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="padding">2</property>
-                <property name="position">11</property>
+                <property name="position">13</property>
               </packing>
             </child>
             <child>
@@ -537,7 +577,7 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="padding">2</property>
-                <property name="position">12</property>
+                <property name="position">14</property>
               </packing>
             </child>
             <child>
@@ -582,7 +622,7 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="padding">2</property>
-                <property name="position">13</property>
+                <property name="position">15</property>
               </packing>
             </child>
           </widget>

@@ -98,12 +98,28 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             name: 'telegram_notify_added',
             id: 'telegram_notify_added'
         }));
+        this.opts.bind('message_added', fieldset.add({
+            fieldLabel: _('Torrent Added Message'),
+            anchor:'100%',
+            name: 'message_added',
+            id: 'message_added',
+            autoWidth: true,
+            value: 'Added Torrent *TORRENTNAME*'
+        }));
         this.opts.bind('telegram_notify_finished', fieldset.add({
             fieldLabel: _(''),
             boxLabel: _('Send Telegram notification when torrents finish'),
             xtype: 'checkbox',
             name: 'telegram_notify_finished',
             id: 'telegram_notify_finished'
+        }));
+        this.opts.bind('message_finished', fieldset.add({
+            fieldLabel: _('Torrent Finished Message'),
+            anchor:'100%',
+            name: 'message_finished',
+            id: 'message_finished',
+            autoWidth: true,
+            value: 'Finished Downloading *TORRENTNAME*'
         }));
         fieldset = this.add({
             xtype: 'fieldset',

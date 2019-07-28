@@ -105,13 +105,15 @@ DEFAULT_PREFS = {"telegram_token":                "Contact @BotFather and create
                  "urllib3_proxy_kwargs_password": "",
                  "regex_exp":                     {},
                  "categories":                    {},
+                 "message_added":                 "Added Torrent *TORRENTNAME*",
+                 "message_finished":              "Finished Downloading *TORRENTNAME*",
                  "minimum_speed":                 int(-1),
                  "user_timer":                    int(60)
                  }
 
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-                         '(KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}
+                         '(KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'}
 
 STICKERS = {'lincoln':  'BQADBAADGQADyIsGAAE2WnfSWOhfUgI',
             'dali':     'BQADBAADHAADyIsGAAFZfq1bphjqlgI',
@@ -1045,6 +1047,7 @@ class Core(CorePluginBase):
         if (self.config['telegram_notify_added'] is False):
             return
         try:
+            custom_message = False
             # get_torrent_status
             # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
@@ -1052,16 +1055,23 @@ class Core(CorePluginBase):
             # Check if label shows up here
             log.debug("get_status for {}".format(torrent_id))
             log.debug(torrent_status)
-            # Check if custom message
-            # if custom msg:
-            #   check length
-            #   check markdown
-            #   
-            # else:
             message = _('Added Torrent *%(name)s*') % torrent_status
+            # Check if custom message
+            if self.config["message_added"] is not DEFAULT_PREFS["message_added"] \
+               and len(self.config["message_added"]) > 0:
+                custom_message = True
+                user_message = self.config["message_added"]
+                if "TORRENTNAME" not in self.config["message_added"]:
+                    log.info(prelog() + "Custom message does not contain the torrent name (TORRENTNAME)")
+                    # message = "{}".format(user_message.replace("TORRENTNAME", re.escape(torrent_status["name"])))
+                message = "{}".format(user_message.replace("TORRENTNAME", torrent_status["name"]))
             log.info(prelog() + 'Sending torrent added message to ' +
                      str(self.notifylist))
-            return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
+            # Disable Markdown for custom messages
+            if custom_message:
+                return self.telegram_send(message, to=self.notifylist)
+            else:
+                return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
         except Exception as e:
             log.error(prelog() + 'Error in alert %s' % str(e))
 
@@ -1070,12 +1080,31 @@ class Core(CorePluginBase):
             if (self.config['telegram_notify_finished'] is False):
                 return
             # torrent_id = str(alert.handle.info_hash())
+            custom_message = False
+            # get_torrent_status
+            # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status({})
+            # Check if label shows up here
+            log.debug("get_status for {}".format(torrent_id))
+            log.debug(torrent_status)
             message = _('Finished Downloading *%(name)s*') % torrent_status
+            # Check if custom message
+            if self.config["message_finished"] is not DEFAULT_PREFS["message_finished"] \
+               and len(self.config["message_finished"]) > 0:
+                custom_message = True
+                user_message = self.config["message_finished"]
+                if "TORRENTNAME" not in self.config["message_finished"]:
+                    log.info(prelog() + "Custom message does not contain the torrent name (TORRENTNAME)")
+                    # message = "{}".format(user_message.replace("TORRENTNAME", re.escape(torrent_status["name"])))
+                message = "{}".format(user_message.replace("TORRENTNAME", torrent_status["name"]))
             log.info(prelog() + 'Sending torrent finished message to ' +
                      str(self.notifylist))
-            return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
+            # Disable Markdown for custom messages
+            if custom_message:
+                return self.telegram_send(message, to=self.notifylist)
+            else:
+                return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
         except Exception, e:
             log.error(prelog() + 'Error in alert %s' %
                       str(e) + '\n' + traceback.format_exc())
