@@ -880,11 +880,10 @@ class Core(CorePluginBase):
                                   'URI `%s` using options `%s` ...',
                                   metainfo, self.opts)
                         tid = component.get('Core').add_torrent_magnet(metainfo, self.opts)
-                        self.apply_label(tid)
+                        r = self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['not_magnet'],
                                                   reply_markup=ReplyKeyboardRemove())
-
                 return ConversationHandler.END
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
@@ -938,7 +937,7 @@ class Core(CorePluginBase):
                         log.info(prelog() + 'Adding torrent from base64 string' +
                                  'using options `%s` ...', self.opts)
                         tid = component.get('Core').add_torrent_file(None, metainfo, self.opts)
-                        self.apply_label(tid)
+                        r = self.apply_label(tid)
                     else:
                         update.message.reply_text(STRINGS['download_fail'],
                                                   reply_markup=ReplyKeyboardRemove())
@@ -972,7 +971,7 @@ class Core(CorePluginBase):
                             log.info(prelog() + 'Adding torrent from base64 string' +
                                      'using options `%s` ...', self.opts)
                             tid = component.get('Core').add_torrent_file(None, metainfo, self.opts)
-                            self.apply_label(tid)
+                            r = self.apply_label(tid)
                         else:
                             update.message.reply_text(STRINGS['download_fail'],
                                                       reply_markup=ReplyKeyboardRemove())
@@ -1011,6 +1010,8 @@ class Core(CorePluginBase):
                     label_plugin.set_torrent(tid, self.label.lower())
                     log.debug(prelog() + 'Set label %s to torrent %s' %
                               (self.label.lower(), tid))
+                    return True
+            return False
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.print_exc())
 
