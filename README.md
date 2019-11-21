@@ -156,7 +156,7 @@ Filter added:
 
 ## Known Issues
 
-* Currently none, please post any issues you find on the [issue tracker](http://github.com/noam09/deluge-telegramer/issues),.
+* Currently none, please post any issues you find on the [issue tracker](http://github.com/noam09/deluge-telegramer/issues).
 
 ## License
 
