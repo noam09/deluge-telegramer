@@ -2,6 +2,8 @@
 
 <p align="center"><a href="https://github.com/noam09/deluge-telegramer" title="Telegramer"><img src="https://i.imgur.com/xXIPX44.png" alt="Telegramer"></a></p>
 
+![GitHub All Releases](https://img.shields.io/github/downloads/noam09/deluge-telegramer/total?style=flat-square) ![Deluge Version](https://img.shields.io/badge/deluge-1.3.15-blue?style=flat-square&logo=deluge)
+
 [Telegramer](https://github.com/noam09/deluge-telegramer) is a [Deluge](https://deluge-torrent.org) plugin for sending notifications, adding and viewing torrents using [Telegram](https://telegram.org/) messenger. It features both a GTK and Web UI.
 
 The plugin runs a [Telegram bot](https://telegram.org/blog/bot-revolution) on the host machine which listens for commands the user sends, allowing you to list active torrents, download new torrents, and receive notifications when torrents are added to Deluge and when they finish downloading.
