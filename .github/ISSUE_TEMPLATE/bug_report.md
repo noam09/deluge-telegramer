@@ -27,6 +27,8 @@ If applicable, add screenshots to help explain your problem.
 Please attach a debug log, make sure to censor out any sensitive info.
 `deluge -L debug -l <logfile>`
 
+- Windows users, see: https://dev.deluge-torrent.org/wiki/Troubleshooting#WindowsSpecificLogging
+
 **OS and Version:**
  - OS: [e.g. `Windows/Linux`]
  - Deluge version: [e.g. `1.3.15`]
