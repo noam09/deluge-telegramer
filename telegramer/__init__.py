@@ -54,7 +54,7 @@ def load_libs():
         ep = egg.get_entry_info("telegramer.libpaths", name)
         location = "%s/%s" % (egg.location, ep.module_name.replace(".", "/"))
         sys.path.append(location)
-        log.error("Appending to sys.path: '%s'" % location)
+        log.debug("Appending to sys.path: '%s'" % location)
 
 
 class CorePlugin(PluginInitBase):

@@ -95,17 +95,18 @@ class Request(object):
 
         self._con_pool_size = con_pool_size
 
-
         # This was performed on Windows only, but it shouldn't be a problem
         # managing cacert.pem on Linux as well
-        #if os.name == 'nt':
+        # if os.name == 'nt':
         try:
             import urllib2
             import tempfile
             capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
+            log.debug("## Telegramer generated CAPath at {}".format(capath))
             # Check if tg-cacert.pem exists and if it's older than 7 days
-            if not os.path.exists(capath) or (os.path.exists(capath) \
-                    and (time.time() - os.path.getctime(capath)) // (24 * 3600) >= 7):
+            if not os.path.exists(capath) or (os.path.exists(capath)
+                                              and (time.time() - os.path.getctime(capath)) // (24 * 3600) >= 7):
+                log.debug("## Telegramer will attempt to download cacert")
                 CACERT_URL = "https://curl.haxx.se/ca/cacert.pem"
                 request = urllib2.Request(CACERT_URL)
                 file_contents = urllib2.urlopen(request).read()
@@ -113,17 +114,18 @@ class Request(object):
                 cafile = open(os.path.realpath(capath), 'wb')
                 cafile.write(file_contents)
                 cafile.close()
+                log.debug("## Telegramer downloaded cacert successfully")
         except:
             try:
+                log.debug("## Telegramer certifi.where()")
                 capath = certifi.where()
             except:
                 capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
 
-
         kwargs = dict(
             maxsize=con_pool_size,
             cert_reqs='CERT_REQUIRED',
-            ca_certs=capath, #certifi.where(),
+            ca_certs=capath,  # certifi.where(),
             socket_options=sockopts,
             timeout=urllib3.Timeout(
                 connect=self._connect_timeout, read=read_timeout, total=None))
@@ -135,7 +137,8 @@ class Request(object):
         # * None (if no proxy is configured)
 
         if not proxy_url:
-            proxy_url = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+            proxy_url = os.environ.get(
+                'HTTPS_PROXY') or os.environ.get('https_proxy')
 
         if not proxy_url:
             if appengine.is_appengine_sandbox():
@@ -155,7 +158,8 @@ class Request(object):
                 mgr = urllib3.proxy_from_url(proxy_url, **kwargs)
                 if mgr.proxy.auth:
                     # TODO: what about other auth types?
-                    auth_hdrs = urllib3.make_headers(proxy_basic_auth=mgr.proxy.auth)
+                    auth_hdrs = urllib3.make_headers(
+                        proxy_basic_auth=mgr.proxy.auth)
                     mgr.proxy_headers.update(auth_hdrs)
 
         self._con_pool = mgr
@@ -266,7 +270,8 @@ class Request(object):
         urlopen_kwargs = {}
 
         if timeout is not None:
-            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
+            urlopen_kwargs['timeout'] = Timeout(
+                read=timeout, connect=self._connect_timeout)
 
         result = self._request_wrapper('GET', url, **urlopen_kwargs)
         return self._parse(result)
@@ -287,7 +292,8 @@ class Request(object):
         urlopen_kwargs = {}
 
         if timeout is not None:
-            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
+            urlopen_kwargs['timeout'] = Timeout(
+                read=timeout, connect=self._connect_timeout)
 
         if InputFile.is_inputfile(data):
             data = InputFile(data)
@@ -316,7 +322,8 @@ class Request(object):
         """
         urlopen_kwargs = {}
         if timeout is not None:
-            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
+            urlopen_kwargs['timeout'] = Timeout(
+                read=timeout, connect=self._connect_timeout)
 
         return self._request_wrapper('GET', url, **urlopen_kwargs)
 
