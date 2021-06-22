@@ -99,6 +99,7 @@ class Request(object):
         # managing cacert.pem on Linux as well
         # if os.name == 'nt':
         try:
+            log.debug("## Telegramer reached cacert code block")
             import urllib2
             import tempfile
             capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
@@ -120,6 +121,7 @@ class Request(object):
                 log.debug("## Telegramer certifi.where()")
                 capath = certifi.where()
             except:
+                log.debug("## Exception for certifi.where()")
                 capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
 
         kwargs = dict(
@@ -129,6 +131,8 @@ class Request(object):
             socket_options=sockopts,
             timeout=urllib3.Timeout(
                 connect=self._connect_timeout, read=read_timeout, total=None))
+
+        log.debug("## Telegramer set cacert path at: {}".format(cacert))
 
         # Set a proxy according to the following order:
         # * proxy defined in proxy_url (+ urllib3_proxy_kwargs)
