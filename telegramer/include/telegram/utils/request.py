@@ -102,6 +102,9 @@ class Request(object):
             log.debug("## Telegramer reached cacert code block")
             import urllib2
             import tempfile
+            handler = urllib2.HTTPSHandler(debuglevel=1)
+            opener = urllib2.build_opener(handler)
+            urllib2.install_opener(opener)
             capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
             log.debug("## Telegramer generated CAPath at {}".format(capath))
             # Check if tg-cacert.pem exists and if it's older than 7 days
@@ -116,12 +119,13 @@ class Request(object):
                 cafile.write(file_contents)
                 cafile.close()
                 log.debug("## Telegramer downloaded cacert successfully")
-        except:
+        except Exception as e:
             try:
+                log.debug("## Telegramer exception: {}".format(str(e)))
                 log.debug("## Telegramer certifi.where()")
                 capath = certifi.where()
-            except:
-                log.debug("## Exception for certifi.where()")
+            except Exception as e:
+                log.debug("## Exception for certifi.where(): {}".format(str(e)))
                 capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
 
         kwargs = dict(
