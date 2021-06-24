@@ -101,6 +101,7 @@ class Request(object):
         try:
             log.debug("## Telegramer reached cacert code block")
             import urllib2
+            import ssl
             import tempfile
             handler = urllib2.HTTPSHandler(debuglevel=1)
             opener = urllib2.build_opener(handler)
@@ -113,7 +114,8 @@ class Request(object):
                 log.debug("## Telegramer will attempt to download cacert")
                 CACERT_URL = "https://curl.haxx.se/ca/cacert.pem"
                 request = urllib2.Request(CACERT_URL)
-                file_contents = urllib2.urlopen(request).read()
+                file_contents = urllib2.urlopen(
+                    request, context=ssl._create_unverified_context()).read()
                 log.debug("## Telegramer downloaded "+os.path.realpath(capath))
                 cafile = open(os.path.realpath(capath), 'wb')
                 cafile.write(file_contents)
