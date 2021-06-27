@@ -100,27 +100,35 @@ class Request(object):
         # if os.name == 'nt':
         try:
             log.debug("## Telegramer reached cacert code block")
-            import urllib2
-            import ssl
-            import tempfile
-            handler = urllib2.HTTPSHandler(debuglevel=1)
-            opener = urllib2.build_opener(handler)
-            urllib2.install_opener(opener)
-            capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
-            log.debug("## Telegramer generated CAPath at {}".format(capath))
-            # Check if tg-cacert.pem exists and if it's older than 7 days
-            if not os.path.exists(capath) or (os.path.exists(capath)
-                                              and (time.time() - os.path.getctime(capath)) // (24 * 3600) >= 7):
-                log.debug("## Telegramer will attempt to download cacert")
-                CACERT_URL = "https://curl.haxx.se/ca/cacert.pem"
-                request = urllib2.Request(CACERT_URL)
-                file_contents = urllib2.urlopen(
-                    request, context=ssl._create_unverified_context()).read()
-                log.debug("## Telegramer downloaded "+os.path.realpath(capath))
-                cafile = open(os.path.realpath(capath), 'wb')
-                cafile.write(file_contents)
-                cafile.close()
-                log.debug("## Telegramer downloaded cacert successfully")
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            cacert_path = os.path.join(current_dir, 'cacert.pem')
+            log.debug("## Telegramer checking {}".format(cacert_path))
+            if os.path.isfile(cacert_path):
+                capath = cacert_path
+            else:
+                log.debug("## Telegramer could not find builtin cacert.pem")
+                import urllib2
+                import ssl
+                import tempfile
+                handler = urllib2.HTTPSHandler(debuglevel=1)
+                opener = urllib2.build_opener(handler)
+                urllib2.install_opener(opener)
+                capath = os.path.join(tempfile.gettempdir(), 'tg-cacert.pem')
+                log.debug("## Telegramer generated CAPath at {}".format(capath))
+                # Check if tg-cacert.pem exists and if it's older than 7 days
+                if not os.path.exists(capath) or (os.path.exists(capath)
+                                                  and (time.time() - os.path.getctime(capath)) // (24 * 3600) >= 7):
+                    log.debug("## Telegramer will attempt to download cacert")
+                    CACERT_URL = "https://curl.haxx.se/ca/cacert.pem"
+                    request = urllib2.Request(CACERT_URL)
+                    file_contents = urllib2.urlopen(
+                        request, context=ssl._create_unverified_context()).read()
+                    log.debug("## Telegramer downloaded " +
+                              os.path.realpath(capath))
+                    cafile = open(os.path.realpath(capath), 'wb')
+                    cafile.write(file_contents)
+                    cafile.close()
+                    log.debug("## Telegramer downloaded cacert successfully")
         except Exception as e:
             try:
                 log.debug("## Telegramer exception: {}".format(str(e)))
@@ -137,8 +145,6 @@ class Request(object):
             socket_options=sockopts,
             timeout=urllib3.Timeout(
                 connect=self._connect_timeout, read=read_timeout, total=None))
-
-        log.debug("## Telegramer set cacert path at: {}".format(cacert))
 
         # Set a proxy according to the following order:
         # * proxy defined in proxy_url (+ urllib3_proxy_kwargs)
