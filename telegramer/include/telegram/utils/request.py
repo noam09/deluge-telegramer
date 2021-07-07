@@ -22,6 +22,7 @@ import socket
 import sys
 import logging
 import warnings
+from common import get_resource
 
 import time
 import traceback
@@ -100,8 +101,9 @@ class Request(object):
         # if os.name == 'nt':
         try:
             log.debug("## Telegramer reached cacert code block")
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            cacert_path = os.path.join(current_dir, 'cacert.pem')
+            # current_dir = os.path.dirname(os.path.abspath(__file__))
+            # cacert_path = os.path.join(current_dir, 'cacert.pem')
+            cacert_path = get_resource('cacert.pem')
             log.debug("## Telegramer checking {}".format(cacert_path))
             if os.path.isfile(cacert_path):
                 capath = cacert_path
