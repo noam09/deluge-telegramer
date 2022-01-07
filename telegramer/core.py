@@ -105,8 +105,8 @@ DEFAULT_PREFS = {"telegram_token":                "Contact @BotFather and create
                  "urllib3_proxy_kwargs_password": "",
                  "regex_exp":                     {},
                  "categories":                    {},
-                 "message_added":                 "Added Torrent **TORRENTNAME**",
-                 "message_finished":              "Finished Downloading **TORRENTNAME**",
+                 "message_added":                 "Added Torrent *TORRENTNAME*",
+                 "message_finished":              "Finished Downloading *TORRENTNAME*",
                  "minimum_speed":                 int(-1),
                  "user_timer":                    int(60)
                  }
