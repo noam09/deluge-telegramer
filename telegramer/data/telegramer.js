@@ -104,7 +104,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             name: 'message_added',
             id: 'message_added',
             autoWidth: true,
-            value: 'Added Torrent **TORRENTNAME**'
+            value: 'Added Torrent *TORRENTNAME*'
         }));
         this.opts.bind('telegram_notify_finished', fieldset.add({
             fieldLabel: _(''),
@@ -119,7 +119,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             name: 'message_finished',
             id: 'message_finished',
             autoWidth: true,
-            value: 'Finished Downloading **TORRENTNAME**'
+            value: 'Finished Downloading *TORRENTNAME*'
         }));
         fieldset = this.add({
             xtype: 'fieldset',

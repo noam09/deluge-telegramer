@@ -250,7 +250,7 @@
                 <property name="tooltip" translatable="yes">Message to send when new torrents are added</property>
                 <property name="max_length">80</property>
                 <property name="invisible_char">●</property>
-                <property name="text" translatable="yes">Added Torrent **TORRENTNAME**</property>
+                <property name="text" translatable="yes">Added Torrent *TORRENTNAME*</property>
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
@@ -286,7 +286,7 @@
                 <property name="tooltip" translatable="yes">Message to send when torrents finish downloading</property>
                 <property name="max_length">80</property>
                 <property name="invisible_char">●</property>
-                <property name="text" translatable="yes">Finished Downloading **TORRENTNAME**</property>
+                <property name="text" translatable="yes">Finished Downloading *TORRENTNAME*</property>
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
