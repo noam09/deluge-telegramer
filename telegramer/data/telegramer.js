@@ -59,28 +59,28 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         });
         this.opts.bind('telegram_token', fieldset.add({
             fieldLabel: _('Telegram bot token'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'telegram_token',
             autoWidth: true,
             value: 'Contact @BotFather and create a bot'
         }));
         this.opts.bind('telegram_user', fieldset.add({
             fieldLabel: _('Telegram user ID'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'telegram_user',
             autoWidth: true,
             value: 'Contact @MyIDbot'
         }));
         this.opts.bind('telegram_users', fieldset.add({
             fieldLabel: _('Additional IDs'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'telegram_users',
             autoWidth: true,
             value: 'IDs should be comma-separated'
         }));
         this.opts.bind('telegram_users_notify', fieldset.add({
             fieldLabel: _('Notify IDs'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'telegram_users_notify',
             autoWidth: true,
             value: 'IDs should be comma-separated'
@@ -100,7 +100,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('message_added', fieldset.add({
             fieldLabel: _('Torrent Added Message'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'message_added',
             id: 'message_added',
             autoWidth: true,
@@ -115,7 +115,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('message_finished', fieldset.add({
             fieldLabel: _('Torrent Finished Message'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'message_finished',
             id: 'message_finished',
             autoWidth: true,
@@ -129,7 +129,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         });
         this.opts.bind('cat1', fieldset.add({
             fieldLabel: _('Category 1'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'cat1',
             id: 'cat1',
             autoWidth: true,
@@ -137,7 +137,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('dir1', fieldset.add({
             fieldLabel: _('Directory 1'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'dir1',
             id: 'dir1',
             autoWidth: true,
@@ -145,7 +145,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('cat2', fieldset.add({
             fieldLabel: _('Category 2'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'cat2',
             id: 'cat2',
             autoWidth: true,
@@ -153,7 +153,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('dir2', fieldset.add({
             fieldLabel: _('Directory 2'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'dir2',
             id: 'dir2',
             autoWidth: true,
@@ -161,7 +161,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('cat3', fieldset.add({
             fieldLabel: _('Category 3'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'cat3',
             id: 'cat3',
             autoWidth: true,
@@ -169,7 +169,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('dir3', fieldset.add({
             fieldLabel: _('Directory 3'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'dir3',
             id: 'dir3',
             autoWidth: true,
@@ -183,7 +183,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         });
         this.opts.bind('minimum_speed', fieldset.add({
             fieldLabel: _('Minimum download speed (KB/s) -1 means no minimum'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'minimum_speed',
             id: 'minimum_speed',
             autoWidth: true,
@@ -191,7 +191,7 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         }));
         this.opts.bind('user_timer', fieldset.add({
             fieldLabel: _('Check for slow torrents every... (seconds)'),
-            anchor:'100%',
+            anchor: '100%',
             name: 'user_timer',
             id: 'user_timer',
             autoWidth: true,
@@ -228,9 +228,9 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             xtype: 'container',
             layout: 'hbox',
             items: [{
-                    xtype: 'button',
-                    text: 'Test',
-                }]
+                xtype: 'button',
+                text: 'Test',
+            }]
         });
         this.teleReloader = this.add({
             fieldLabel: _(''),
@@ -238,9 +238,9 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             xtype: 'container',
             layout: 'hbox',
             items: [{
-                    xtype: 'button',
-                    text: 'Reload',
-                }]
+                xtype: 'button',
+                text: 'Reload',
+            }]
         });
 
         this.teleTester.getComponent(0).setHandler(this.teleTest, this);
@@ -258,62 +258,62 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         deluge.client.telegramer.restart_telegramer();
     },
 
-    onPreferencesShow: function () {
+    onPreferencesShow: function() {
         deluge.client.telegramer.get_config({
-            success: function (config) {
-            if (!Ext.isEmpty(config['telegram_token'])) {
-                config['telegram_token'] = config['telegram_token'];
-            }
-            if (!Ext.isEmpty(config['telegram_user'])) {
-                config['telegram_user'] = config['telegram_user'];
-            }
-            if (!Ext.isEmpty(config['telegram_users'])) {
-                config['telegram_users'] = config['telegram_users'];
-            }
-            if (!Ext.isEmpty(config['telegram_users_notify'])) {
-                config['telegram_users_notify'] = config['telegram_users_notify'];
-            }
-            if (!Ext.isEmpty(config['telegram_notify_added'])) {
-                config['telegram_notify_added'] = config['telegram_notify_added'];
-            }
-            if (!Ext.isEmpty(config['telegram_notify_finished'])) {
-                config['telegram_notify_finished'] = config['telegram_notify_finished'];
-            }
-            if (!Ext.isEmpty(config['minimum_speed'])) {
-                config['minimum_speed'] = config['minimum_speed'];
-            }
-            if (!Ext.isEmpty(config['user_timer'])) {
-                config['user_timer'] = config['user_timer'];
-            }
-            if (!Ext.isEmpty(config['proxy_url'])) {
-                config['proxy_url'] = config['proxy_url']
-            }
-            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_username'])) {
-                config['urllib3_proxy_kwargs_username'] = config['urllib3_proxy_kwargs_username']
-            }
-            if (!Ext.isEmpty(config['urllib3_proxy_kwargs_password'])) {
-                config['urllib3_proxy_kwargs_password'] = config['urllib3_proxy_kwargs_password']
-            }
-            if (!Ext.isEmpty(config['cat1'])) {
-                config['cat1'] = config['cat1'];
-            }
-            if (!Ext.isEmpty(config['cat2'])) {
-                config['cat2'] = config['cat2'];
-            }
-            if (!Ext.isEmpty(config['cat3'])) {
-                config['cat3'] = config['cat3'];
-            }
-            if (!Ext.isEmpty(config['dir1'])) {
-                config['dir1'] = config['dir1'];
-            }
-            if (!Ext.isEmpty(config['dir2'])) {
-                config['dir2'] = config['dir2'];
-            }
-            if (!Ext.isEmpty(config['dir3'])) {
-                config['dir3'] = config['dir3'];
-            }
-            //Ext.getCmp("mycheck").checked;
-            this.opts.set(config);
+            success: function(config) {
+                if (!Ext.isEmpty(config['telegram_token'])) {
+                    config['telegram_token'] = config['telegram_token'];
+                }
+                if (!Ext.isEmpty(config['telegram_user'])) {
+                    config['telegram_user'] = config['telegram_user'];
+                }
+                if (!Ext.isEmpty(config['telegram_users'])) {
+                    config['telegram_users'] = config['telegram_users'];
+                }
+                if (!Ext.isEmpty(config['telegram_users_notify'])) {
+                    config['telegram_users_notify'] = config['telegram_users_notify'];
+                }
+                if (!Ext.isEmpty(config['telegram_notify_added'])) {
+                    config['telegram_notify_added'] = config['telegram_notify_added'];
+                }
+                if (!Ext.isEmpty(config['telegram_notify_finished'])) {
+                    config['telegram_notify_finished'] = config['telegram_notify_finished'];
+                }
+                if (!Ext.isEmpty(config['minimum_speed'])) {
+                    config['minimum_speed'] = config['minimum_speed'];
+                }
+                if (!Ext.isEmpty(config['user_timer'])) {
+                    config['user_timer'] = config['user_timer'];
+                }
+                if (!Ext.isEmpty(config['proxy_url'])) {
+                    config['proxy_url'] = config['proxy_url']
+                }
+                if (!Ext.isEmpty(config['urllib3_proxy_kwargs_username'])) {
+                    config['urllib3_proxy_kwargs_username'] = config['urllib3_proxy_kwargs_username']
+                }
+                if (!Ext.isEmpty(config['urllib3_proxy_kwargs_password'])) {
+                    config['urllib3_proxy_kwargs_password'] = config['urllib3_proxy_kwargs_password']
+                }
+                if (!Ext.isEmpty(config['cat1'])) {
+                    config['cat1'] = config['cat1'];
+                }
+                if (!Ext.isEmpty(config['cat2'])) {
+                    config['cat2'] = config['cat2'];
+                }
+                if (!Ext.isEmpty(config['cat3'])) {
+                    config['cat3'] = config['cat3'];
+                }
+                if (!Ext.isEmpty(config['dir1'])) {
+                    config['dir1'] = config['dir1'];
+                }
+                if (!Ext.isEmpty(config['dir2'])) {
+                    config['dir2'] = config['dir2'];
+                }
+                if (!Ext.isEmpty(config['dir3'])) {
+                    config['dir3'] = config['dir3'];
+                }
+                //Ext.getCmp("mycheck").checked;
+                this.opts.set(config);
             },
             scope: this,
         });
@@ -322,19 +322,19 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
         var changed = this.opts.getDirty();
         if (!Ext.isObjectEmpty(changed)) {
             if (!Ext.isEmpty(changed['telegram_token'])) {
-            changed['telegram_token'] = changed['telegram_token'];
+                changed['telegram_token'] = changed['telegram_token'];
             }
             if (!Ext.isEmpty(changed['telegram_user'])) {
-            changed['telegram_user'] = changed['telegram_user'];
+                changed['telegram_user'] = changed['telegram_user'];
             }
             if (!Ext.isEmpty(changed['telegram_users'])) {
-            changed['telegram_users'] = changed['telegram_users'];
+                changed['telegram_users'] = changed['telegram_users'];
             }
             if (!Ext.isEmpty(changed['telegram_notify_added'])) {
-            changed['telegram_notify_added'] = changed['telegram_notify_added'];
+                changed['telegram_notify_added'] = changed['telegram_notify_added'];
             }
             if (!Ext.isEmpty(changed['telegram_notify_finished'])) {
-            changed['telegram_notify_finished'] = changed['telegram_notify_finished'];
+                changed['telegram_notify_finished'] = changed['telegram_notify_finished'];
             }
             if (!Ext.isEmpty(changed['minimum_speed'])) {
                 changed['minimum_speed'] = changed['minimum_speed'];
@@ -343,31 +343,31 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
                 changed['user_timer'] = changed['user_timer'];
             }
             if (!Ext.isEmpty(changed['proxy_url'])) {
-            changed['proxy_url'] = changed['proxy_url']
+                changed['proxy_url'] = changed['proxy_url']
             }
             if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_username'])) {
-            changed['urllib3_proxy_kwargs_username'] = changed['urllib3_proxy_kwargs_username']
+                changed['urllib3_proxy_kwargs_username'] = changed['urllib3_proxy_kwargs_username']
             }
             if (!Ext.isEmpty(changed['urllib3_proxy_kwargs_password'])) {
-            changed['urllib3_proxy_kwargs_password'] = changed['urllib3_proxy_kwargs_password']
+                changed['urllib3_proxy_kwargs_password'] = changed['urllib3_proxy_kwargs_password']
             }
             if (!Ext.isEmpty(changed['cat1'])) {
-            changed['cat1'] = changed['cat1'];
+                changed['cat1'] = changed['cat1'];
             }
             if (!Ext.isEmpty(changed['cat2'])) {
-            changed['cat2'] = changed['cat2'];
+                changed['cat2'] = changed['cat2'];
             }
             if (!Ext.isEmpty(changed['cat3'])) {
-            changed['cat3'] = changed['cat3'];
+                changed['cat3'] = changed['cat3'];
             }
             if (!Ext.isEmpty(changed['dir1'])) {
-            changed['dir1'] = changed['dir1'];
+                changed['dir1'] = changed['dir1'];
             }
             if (!Ext.isEmpty(changed['dir2'])) {
-            changed['dir2'] = changed['dir2'];
+                changed['dir2'] = changed['dir2'];
             }
             if (!Ext.isEmpty(changed['dir3'])) {
-            changed['dir3'] = changed['dir3'];
+                changed['dir3'] = changed['dir3'];
             }
             deluge.client.telegramer.set_config(changed, {
                 success: this.onSetConfig,

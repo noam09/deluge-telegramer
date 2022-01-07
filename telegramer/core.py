@@ -1068,11 +1068,7 @@ class Core(CorePluginBase):
                 message = "{}".format(user_message.replace("TORRENTNAME", torrent_status["name"]))
             log.info(prelog() + 'Sending torrent added message to ' +
                      str(self.notifylist))
-            # Disable Markdown for custom messages
-            if custom_message:
-                return self.telegram_send(message, to=self.notifylist)
-            else:
-                return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
+            return self.telegram_send('{}'.format(message), to=self.notifylist, parse_mode='Markdown')
         except Exception as e:
             log.error(prelog() + 'Error in alert %s' % str(e))
 
@@ -1101,12 +1097,8 @@ class Core(CorePluginBase):
                 message = "{}".format(user_message.replace("TORRENTNAME", torrent_status["name"]))
             log.info(prelog() + 'Sending torrent finished message to ' +
                      str(self.notifylist))
-            # Disable Markdown for custom messages
-            if custom_message:
-                return self.telegram_send(message, to=self.notifylist)
-            else:
-                return self.telegram_send(message, to=self.notifylist, parse_mode='Markdown')
-        except Exception, e:
+            return self.telegram_send('{}'.format(message), to=self.notifylist, parse_mode='Markdown')
+        except Exception as e:
             log.error(prelog() + 'Error in alert %s' %
                       str(e) + '\n' + traceback.format_exc())
 
