@@ -64,7 +64,7 @@ def prelog():
 
 try:
     import re
-    import urllib2
+    import urllib.request, urllib.error, urllib.parse
     from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot)
     from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                               RegexHandler, ConversationHandler, BaseFilter)
@@ -92,7 +92,7 @@ class FilterMagnets(BaseFilter):
         return 'magnet:?' in message.text
 
 
-CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, RSS_FEED, FILE_NAME, REGEX = range(9)
+CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, RSS_FEED, FILE_NAME, REGEX = list(range(9))
 
 DEFAULT_PREFS = {"telegram_token":                "Contact @BotFather and create a new bot",
                  "telegram_user":                 "Contact @MyIDbot",
@@ -122,11 +122,11 @@ STICKERS = {'lincoln':  'BQADBAADGQADyIsGAAE2WnfSWOhfUgI',
             'snow':     'CAADAgADZQUAAgi3GQJyjRNCuIA54gI',
             'borat':    'CAADBAADmwQAAjJQbQAB5DpM4iETWoQC'}
 
-EMOJI = {'seeding':     u'\u23eb',
-         'queued':      u'\u23ef',
-         'paused':      u'\u23f8',
-         'error':       u'\u2757\ufe0f',
-         'downloading': u'\u23ec'}
+EMOJI = {'seeding':     '\u23eb',
+         'queued':      '\u23ef',
+         'paused':      '\u23f8',
+         'error':       '\u2757\ufe0f',
+         'downloading': '\u23ec'}
 
 REGEX_SUBS_WORD = r"NAME"
 
@@ -163,7 +163,7 @@ STRINGS = {'no_label': 'No Label',
 
 INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
              ('state', None),
-             ('name', lambda i, s: u' %s *%s* ' %
+             ('name', lambda i, s: ' %s *%s* ' %
               (s['state'] if s['state'].lower() not in EMOJI
                else EMOJI[s['state'].lower()],
                i)),
@@ -200,7 +200,7 @@ def format_torrent_info(torrent):
     log.debug(status)
     status_string = ''
     try:
-        status_string = u''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
+        status_string = ''.join([f(status[i], status) for i, f in INFO_DICT if f is not None])
     # except UnicodeDecodeError as e:
     except Exception as e:
         status_string = ''
@@ -256,14 +256,14 @@ class Core(CorePluginBase):
                     self.whitelist.append(str(self.config['telegram_user']))
                     self.notifylist.append(str(self.config['telegram_user']))
                     if self.config['telegram_users']:
-                        telegram_user_list = filter(None, [x.strip() for x in
-                                                    str(self.config['telegram_users']).split(',')])
+                        telegram_user_list = [_f for _f in [x.strip() for x in
+                                                    str(self.config['telegram_users']).split(',')] if _f]
                         # Merge with whitelist and remove duplicates - order will be lost
                         self.whitelist = list(set(self.whitelist + telegram_user_list))
                         log.debug(prelog() + 'Whitelist: ' + str(self.whitelist))
                     if self.config['telegram_users_notify']:
-                        n = filter(None, [x.strip() for x in
-                                   str(self.config['telegram_users_notify']).split(',')])
+                        n = [_f for _f in [x.strip() for x in
+                                   str(self.config['telegram_users_notify']).split(',')] if _f]
                         telegram_user_list_notify = [a for a in n if is_int(a)]
                         # Merge with notifylist and remove duplicates - order will be lost
                         self.notifylist = list(set(self.notifylist +
@@ -336,7 +336,7 @@ class Core(CorePluginBase):
                 dp.add_handler(MessageHandler(Filters.document, self.add_torrent))
                 dp.add_handler(MessageHandler(filter_magnets, self.find_magnet))
 
-                for key, value in self.COMMANDS.iteritems():
+                for key, value in self.COMMANDS.items():
                     dp.add_handler(CommandHandler(key, value))
 
                 # Log all errors
@@ -384,7 +384,7 @@ class Core(CorePluginBase):
                 to = self.config['telegram_user']
             else:
                 log.debug(prelog() + 'send_message, to set')
-            if not isinstance(to, (list,)):
+            if not isinstance(to, list):
                 log.debug(prelog() + 'Convert "to" to list')
                 to = [to]
             log.debug(prelog() + "[to] " + str(to))
@@ -572,12 +572,12 @@ class Core(CorePluginBase):
     def prepare_categories(self, bot, update):
         try:
             keyboard_options = []
-            filtered_dict = {c: d for c, d in self.config["categories"].iteritems() if os.path.isdir(d)}
-            missing = {c: d for c, d in self.config["categories"].iteritems() if not os.path.isdir(d)}
+            filtered_dict = {c: d for c, d in self.config["categories"].items() if os.path.isdir(d)}
+            missing = {c: d for c, d in self.config["categories"].items() if not os.path.isdir(d)}
             if len(missing) > 0:
-                for k in missing.keys():
+                for k in list(missing.keys()):
                     log.error(prelog() + "Missing directory for category {} ({})".format(k, missing[k]))
-            for c, d in filtered_dict.iteritems():
+            for c, d in filtered_dict.items():
                 log.error(prelog() + c + ' : ' + d)
                 keyboard_options.append([c])
 
@@ -613,7 +613,7 @@ class Core(CorePluginBase):
                 if STRINGS['no_category'] == update.message.text:
                     self.opts = self.opts
                 else:
-                    if update.message.text in self.config["categories"].keys():
+                    if update.message.text in list(self.config["categories"].keys()):
                         # move_completed_path vs download_location
                         self.opts["move_completed_path"] = self.config["categories"][update.message.text]
                         self.opts["move_completed"] = True
@@ -691,14 +691,14 @@ class Core(CorePluginBase):
             self.yarss_config = self.yarss_plugin.get_config()
             feeds = {}
             # Create dictionary with feed name:url
-            for rss_feed in self.yarss_config["rssfeeds"].values():
+            for rss_feed in list(self.yarss_config["rssfeeds"].values()):
                 feeds[rss_feed["name"]] = rss_feed["url"]
             # If feed(s) found
             count = 0
             if len(feeds) > 0:
                 count = count + 1
-                feedlist = "\n".join(["{}) [{}]({})".format(count, f, feeds[f]) for f in feeds.keys()])
-                keyboard_options = [feeds.keys()]
+                feedlist = "\n".join(["{}) [{}]({})".format(count, f, feeds[f]) for f in list(feeds.keys())])
+                keyboard_options = [list(feeds.keys())]
                 update.message.reply_text(
                     '%s\n\n%s\n\n%s' % (STRINGS['which_rss_feed'], feedlist, STRINGS['cancel']),
                     reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True),
@@ -718,7 +718,7 @@ class Core(CorePluginBase):
             return
         self.is_rss = True
         try:
-            rss_feed = next(rss_feed for rss_feed in self.yarss_config["rssfeeds"].values()
+            rss_feed = next(rss_feed for rss_feed in list(self.yarss_config["rssfeeds"].values())
                             if rss_feed["name"] == update.message.text)
 
             self.yarss_data.subscription_data["rssfeed_key"] = rss_feed["key"]
@@ -726,7 +726,7 @@ class Core(CorePluginBase):
 
             log.debug(self.config["regex_exp"])
 
-            keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys() if regex_name != '']
+            keyboard_options = [[regex_name] for regex_name in list(self.config["regex_exp"].keys()) if regex_name != '']
 
             if len(keyboard_options) > 0:
                 update.message.reply_text(
@@ -753,7 +753,7 @@ class Core(CorePluginBase):
                 reply_markup=ReplyKeyboardRemove())
             return FILE_NAME
         else:
-            keyboard_options = [[regex_name] for regex_name in self.config["regex_exp"].keys()]
+            keyboard_options = [[regex_name] for regex_name in list(self.config["regex_exp"].keys())]
             update.message.reply_text(
                 '%s\n%s' % (STRINGS['no_name'], STRINGS['cancel']),
                 reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
@@ -926,10 +926,10 @@ class Core(CorePluginBase):
                     # Get file info
                     file_info = self.bot.getFile(update.message.document.file_id)
                     # Download file
-                    request = urllib2.Request(file_info.file_path, headers=HEADERS)
-                    status_code = urllib2.urlopen(request).getcode()
+                    request = urllib.request.Request(file_info.file_path, headers=HEADERS)
+                    status_code = urllib.request.urlopen(request).getcode()
                     if status_code == 200:
-                        file_contents = urllib2.urlopen(request).read()
+                        file_contents = urllib.request.urlopen(request).read()
                         # Base64 encode file data
                         metainfo = b64encode(file_contents)
                         if self.opts is None:
@@ -959,11 +959,11 @@ class Core(CorePluginBase):
                 if is_url(update.message.text):
                     try:
                         # Download file
-                        request = urllib2.Request(update.message.text.strip(),
+                        request = urllib.request.Request(update.message.text.strip(),
                                                   headers=HEADERS)
-                        status_code = urllib2.urlopen(request).getcode()
+                        status_code = urllib.request.urlopen(request).getcode()
                         if status_code == 200:
-                            file_contents = urllib2.urlopen(request).read()
+                            file_contents = urllib.request.urlopen(request).read()
                             # Base64 encode file data
                             metainfo = b64encode(file_contents)
                             if self.opts is None:
@@ -1021,7 +1021,7 @@ class Core(CorePluginBase):
     def check_speed(self):
         log.debug("Minimum speed: %s", self.config["minimum_speed"])
         try:
-            for t in component.get('TorrentManager').torrents.values():
+            for t in list(component.get('TorrentManager').torrents.values()):
                 if t.get_status(("state",))["state"] == "Downloading":
                     if t.status.download_rate < (self.config['minimum_speed'] * 1024):
                         message = _('Torrent *%(name)s* is slower than minimum speed!') % t.get_status({})
@@ -1104,15 +1104,15 @@ class Core(CorePluginBase):
 
     def list_torrents(self, filter=lambda _: True):
         return '\n'.join([format_torrent_info(t) for t
-                         in component.get('TorrentManager').torrents.values()
-                         if filter(t)] or [STRINGS['no_items']])
+                         in list(component.get('TorrentManager').torrents.values())
+                         if list(filter(t))] or [STRINGS['no_items']])
 
     @export
     def set_config(self, config):
         """Sets the config dictionary"""
         log.debug(prelog() + 'Set config')
         dirty = False
-        for key in config.keys():
+        for key in list(config.keys()):
             if ("categories" == key and cmp(self.config[key], config[key])) or \
                     self.config[key] != config[key]:
                 dirty = True

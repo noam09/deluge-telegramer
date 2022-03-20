@@ -26,8 +26,11 @@ from time import sleep
 from uuid import uuid4
 from collections import defaultdict
 
-# REMREM from queue import Queue, Empty
-from Queue import Queue, Empty
+# REMREM 
+try:
+    from queue import Queue, Empty
+except ImportError:
+    from Queue import Queue, Empty
 
 from future.builtins import range
 

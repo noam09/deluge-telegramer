@@ -20,8 +20,10 @@
 from base64 import b64decode
 from os.path import basename
 
-# REMREM from future.backports.urllib import parse as urllib_parse
-from urlparse import urlparse as urllib_parse
+try:
+    from future.backports.urllib import parse as urllib_parse
+except ImportError:
+    from urlparse import urlparse as urllib_parse
 
 from telegram import TelegramObject
 from telegram.passport.credentials import decrypt

@@ -24,8 +24,11 @@ import datetime
 import weakref
 from numbers import Number
 from threading import Thread, Lock, Event
-# REMREM from queue import PriorityQueue, Empty
-from Queue import PriorityQueue, Empty
+# REMREM 
+try:
+    from queue import PriorityQueue, Empty
+except ImportError:
+    from Queue import PriorityQueue, Empty
 
 
 class Days(object):

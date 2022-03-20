@@ -25,8 +25,11 @@ from threading import Thread, Lock, current_thread, Event
 from time import sleep
 import subprocess
 from signal import signal, SIGINT, SIGTERM, SIGABRT
-# REMREM from queue import Queue
-from Queue import Queue
+# REMREM 
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
 
 from telegram import Bot, TelegramError
 from telegram.ext import Dispatcher, JobQueue
