@@ -65,9 +65,9 @@ def prelog():
 try:
     import re
     import urllib.request, urllib.error, urllib.parse
-    from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot)
-    from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
-                              RegexHandler, ConversationHandler, BaseFilter)
+    from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot, Update)
+    from telegram.ext import (Updater, CallbackContext, CommandHandler, MessageHandler,
+                              RegexHandler, ConversationHandler, BaseFilter, Filters)
     from telegram.utils.request import Request
     import threading
     from base64 import b64encode
@@ -87,9 +87,9 @@ except ImportError as e:
     log.error(prelog() + 'Import error - %s\n%s' % (str(e), traceback.format_exc()))
 
 
-class FilterMagnets(BaseFilter):
-    def filter(self, message):
-        return 'magnet:?' in message.text
+# class _FilterMagnets(BaseFilter):
+#     def filter(self, message):
+#         return 'magnet:?' in message.text
 
 
 CATEGORY, SET_LABEL, TORRENT_TYPE, ADD_MAGNET, ADD_TORRENT, ADD_URL, RSS_FEED, FILE_NAME, REGEX = list(range(9))
@@ -183,7 +183,7 @@ INFO_DICT = (('queue', lambda i, s: i != -1 and str(i) or '#'),
 
 INFOS = [i[0] for i in INFO_DICT]
 
-filter_magnets = FilterMagnets()
+# filter_magnets = _FilterMagnets()
 
 
 def is_int(s):
@@ -240,7 +240,7 @@ class Core(CorePluginBase):
                              'seeding':     self.cmd_up,
                              'paused':      self.cmd_paused,
                              'queued':      self.cmd_paused,
-                             '?':           self.cmd_help,
+                             # '?':           self.cmd_help,
                              'cancel':      self.cancel,
                              'help':        self.cmd_help,
                              'start':       self.cmd_help,
@@ -290,7 +290,7 @@ class Core(CorePluginBase):
                 self.bot = Bot(self.config['telegram_token'], request=bot_request)
                 # Create the EventHandler and pass it bot's token.
                 # self.updater = Updater(self.config['telegram_token'], bot=self.bot, request_kwargs=REQUEST_KWARGS)
-                self.updater = Updater(bot=self.bot, request_kwargs=REQUEST_KWARGS)
+                self.updater = Updater(bot=self.bot, use_context=True, request_kwargs=REQUEST_KWARGS)
                 # Get the dispatcher to register handlers
                 dp = self.updater.dispatcher
                 # Add conversation handler with the different states
@@ -334,7 +334,7 @@ class Core(CorePluginBase):
                 dp.add_handler(conv_handler_paused)
                 dp.add_handler(conv_handler_rss)
                 dp.add_handler(MessageHandler(Filters.document, self.add_torrent))
-                dp.add_handler(MessageHandler(filter_magnets, self.find_magnet))
+                dp.add_handler(MessageHandler(Filters.regex(r'magnet:\?'), self.find_magnet))
 
                 for key, value in self.COMMANDS.items():
                     dp.add_handler(CommandHandler(key, value))
@@ -358,8 +358,8 @@ class Core(CorePluginBase):
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def error(self, bot, update, error):
-        log.warn('Update "%s" caused error "%s"' % (update, error))
+    def error(self, update: Update, context: CallbackContext):
+        log.warn('Update "%s" caused error "%s"' % (update, context.error))
 
     def disable(self):
         try:
@@ -445,7 +445,7 @@ class Core(CorePluginBase):
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def cancel(self, bot, update):
+    def cancel(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             log.info("User %s canceled the conversation."
                      % str(update.message.chat.id))
@@ -456,7 +456,7 @@ class Core(CorePluginBase):
             self.yarss_data.clear()
             return ConversationHandler.END
 
-    def cmd_help(self, bot, update):
+    def cmd_help(self, update: Update, context: CallbackContext):
         log.debug(prelog() + "Entered cmd_help")
         if str(update.message.chat.id) in self.whitelist:
             log.debug(prelog() + str(update.message.chat.id) + " in whitelist")
@@ -475,7 +475,7 @@ class Core(CorePluginBase):
                                to=[update.message.chat.id],
                                parse_mode='Markdown')
 
-    def cmd_list(self, bot, update):
+    def cmd_list(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             # log.error(self.list_torrents())
             self.telegram_send(self.list_torrents(lambda t:
@@ -485,21 +485,21 @@ class Core(CorePluginBase):
                                to=[update.message.chat.id],
                                parse_mode='Markdown')
 
-    def cmd_down(self, bot, update):
+    def cmd_down(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             self.telegram_send(self.list_torrents(lambda t:
                                t.get_status(('state',))['state'] == 'Downloading'),
                                to=[update.message.chat.id],
                                parse_mode='Markdown')
 
-    def cmd_up(self, bot, update):
+    def cmd_up(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             self.telegram_send(self.list_torrents(lambda t:
                                t.get_status(('state',))['state'] == 'Seeding'),
                                to=[update.message.chat.id],
                                parse_mode='Markdown')
 
-    def cmd_paused(self, bot, update):
+    def cmd_paused(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             self.telegram_send(self.list_torrents(lambda t:
                                t.get_status(('state',))['state'] in
@@ -507,43 +507,42 @@ class Core(CorePluginBase):
                                to=[update.message.chat.id],
                                parse_mode='Markdown')
 
-    def add(self, bot, update):
-        # log.error(type(update.message.chat.id) + str(update.message.chat.id))
+    def add(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             self.opts = {}
             self.is_rss = False
             self.magnet_only = False
-            return self.prepare_categories(bot, update)
+            return self.prepare_categories(update, context)
             """
             if "YaRSS2" in component.get('Core').get_available_plugins():
-                return self.prepare_torrent_or_rss(bot, update)
+                return self.prepare_torrent_or_rss(update, context)
             else:
-                return self.prepare_categories(bot, update)
+                return self.prepare_categories(update, context)
             """
 
-    def add_paused(self, bot, update):
+    def add_paused(self, update: Update, context: CallbackContext):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
             self.opts = {}
             self.opts["addpaused"] = True
             self.is_rss = False
             self.magnet_only = False
-            return self.prepare_categories(bot, update)
+            return self.prepare_categories(update, context)
 
-    def cmd_add_rss(self, bot, update):
+    def cmd_add_rss(self, update: Update, context: CallbackContext):
         # log.error(type(update.message.chat.id) + str(update.message.chat.id))
         if str(update.message.chat.id) in self.whitelist:
             if "YaRSS2" in component.get('Core').get_available_plugins():
-                return self.add_rss(bot, update)
+                return self.add_rss(update, context)
             else:
                 update.message.reply_text('YaRSS2 plugin not available',
                                           reply_markup=ReplyKeyboardRemove())
                 self.is_rss = False
                 self.yarss_data.clear()
                 return ConversationHandler.END
-                # return self.prepare_categories(bot, update)
+                # return self.prepare_categories(update, context)
 
-    # def prepare_torrent_or_rss(self, bot, update):
+    # def prepare_torrent_or_rss(self, update: Update, context: CallbackContext):
     #     try:
     #         keyboard_options = [[STRINGS['torrent']], [STRINGS['rss']]]
     #         update.message.reply_text(
@@ -555,21 +554,21 @@ class Core(CorePluginBase):
     #     except Exception as e:
     #         log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def torrent_or_rss(self, bot, update):
+    def torrent_or_rss(self, update: Update, context: CallbackContext):
         try:
             if str(update.message.chat.id) not in self.whitelist:
                 return
 
             if STRINGS['torrent'] == update.message.text:
-                return self.prepare_categories(bot, update)
+                return self.prepare_categories(update, context)
 
             if STRINGS['rss'] == update.message.text:
-                return self.add_rss(bot, update)
+                return self.add_rss(update, context)
 
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def prepare_categories(self, bot, update):
+    def prepare_categories(self, update: Update, context: CallbackContext):
         try:
             keyboard_options = []
             filtered_dict = {c: d for c, d in self.config["categories"].items() if os.path.isdir(d)}
@@ -590,7 +589,7 @@ class Core(CorePluginBase):
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def prepare_torrent_type(self, update):
+    def prepare_torrent_type(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 # Request torrent type
@@ -607,7 +606,7 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def category(self, bot, update):
+    def category(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 if STRINGS['no_category'] == update.message.text:
@@ -641,7 +640,7 @@ class Core(CorePluginBase):
                                       traceback.format_exc())
                 if self.is_rss:
                     log.debug(prelog() + "is_rss, calling RSS_APPLY")
-                    return self.rss_apply(bot, update)
+                    return self.rss_apply(update, context)
 
                 log.debug(prelog() + "Label segment")
                 keyboard_options = []
@@ -676,7 +675,7 @@ class Core(CorePluginBase):
                     return SET_LABEL
                 else:
                     if self.is_rss:
-                        return self.prepare_rss_feed(bot, update)
+                        return self.prepare_rss_feed(update, context)
                     else:
                         return self.prepare_torrent_type(update)
                 """
@@ -684,7 +683,7 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def prepare_rss_feed(self, bot, update):
+    def prepare_rss_feed(self, update: Update, context: CallbackContext):
         if self.yarss_plugin is None:
             self.yarss_plugin = component.get('CorePlugin.YaRSS2')
         if self.yarss_plugin:
@@ -713,7 +712,7 @@ class Core(CorePluginBase):
 
         return ConversationHandler.END
 
-    def rss_feed(self, bot, update):
+    def rss_feed(self, update: Update, context: CallbackContext):
         if not str(update.message.chat.id) in self.whitelist:
             return
         self.is_rss = True
@@ -741,7 +740,7 @@ class Core(CorePluginBase):
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def regex(self, bot, update):
+    def regex(self, update: Update, context: CallbackContext):
         if not str(update.message.chat.id) in self.whitelist:
             return
         if REGEX_SUBS_WORD in self.config["regex_exp"][update.message.text]:
@@ -759,7 +758,7 @@ class Core(CorePluginBase):
                 reply_markup=ReplyKeyboardMarkup(keyboard_options, one_time_keyboard=True))
             return REGEX
 
-    def rss_file_name(self, bot, update):
+    def rss_file_name(self, update: Update, context: CallbackContext):
         if not str(update.message.chat.id) in self.whitelist:
             return
 
@@ -775,9 +774,9 @@ class Core(CorePluginBase):
         self.yarss_data.subscription_data["label"] = self.label
         self.yarss_data.subscription_data["name"] = update.message.text
 
-        return self.prepare_categories(bot, update)
+        return self.prepare_categories(update, context)
 
-    def rss_apply(self, bot, update):
+    def rss_apply(self, update: Update, context: CallbackContext):
         log.debug(prelog() + "entered rss_apply")
         if str(update.message.chat.id) in self.whitelist:
             log.debug(prelog() + "in whitelist")
@@ -796,19 +795,19 @@ class Core(CorePluginBase):
         else:
             log.debug(prelog() + "not in whitelist")
 
-    def set_label(self, bot, update):
+    def set_label(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 # user = update.message.chat.id
                 self.label = update.message.text
                 log.debug(prelog() + "Label: %s" % (update.message.text))
 
-                return self.prepare_torrent_type(update)
+                return self.prepare_torrent_type(update, context)
 
                 """
                 # Request torrent type
                 if self.is_rss:
-                    return self.prepare_rss_feed(bot, update)
+                    return self.prepare_rss_feed(update, context)
                 else:
                     return self.prepare_torrent_type(update)
                 """
@@ -816,7 +815,7 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def torrent_type(self, bot, update):
+    def torrent_type(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 user = update.message.chat.id
@@ -845,7 +844,7 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def add_magnet(self, bot, update):
+    def add_magnet(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 if self.magnet_only:
@@ -891,7 +890,7 @@ class Core(CorePluginBase):
             # except Exception as e:
             #     log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def find_magnet(self, bot, update):
+    def find_magnet(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 log.debug("Find magnets in message")
@@ -901,7 +900,7 @@ class Core(CorePluginBase):
                     if len(m) > 0:
                         mag = m[0]
                         self.magnet_only = True
-                        return self.add_magnet(bot, update)
+                        return self.add_magnet(update, context)
                     else:
                         log.debug("Magnet not found in message")
                         update.message.reply_text(STRINGS['no_magnet_found'],
@@ -915,7 +914,7 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def add_torrent(self, bot, update):
+    def add_torrent(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 user = update.message.chat.id
@@ -950,7 +949,7 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def add_url(self, bot, update):
+    def add_url(self, update: Update, context: CallbackContext):
         if str(update.message.chat.id) in self.whitelist:
             try:
                 user = update.message.chat.id
@@ -988,12 +987,12 @@ class Core(CorePluginBase):
             except Exception as e:
                 log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
-    def add_rss(self, bot, update):
+    def add_rss(self, update: Update, context: CallbackContext):
         try:
             component.get('Core').enable_plugin('YaRSS2')
             self.is_rss = True
-            return self.prepare_rss_feed(bot, update)
-            # return self.prepare_categories(bot, update)
+            return self.prepare_rss_feed(update, context)
+            # return self.prepare_categories(update, context)
         except Exception as e:
             log.error(prelog() + str(e) + '\n' + traceback.format_exc())
 
@@ -1044,15 +1043,13 @@ class Core(CorePluginBase):
         event_manager.deregister_event_handler('TorrentAddedEvent',
                                                self.on_torrent_added)
 
-    def on_torrent_added(self, torrent_id):
+    def on_torrent_added(self, torrent_id, from_state):
         if (self.config['telegram_notify_added'] is False):
             return
         try:
             custom_message = False
-            # get_torrent_status
-            # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
-            torrent_status = torrent.get_status({})
+            torrent_status = torrent.get_status(['name'])
             # Check if label shows up here
             log.debug("get_status for {}".format(torrent_id))
             log.debug(torrent_status)
@@ -1076,12 +1073,9 @@ class Core(CorePluginBase):
         try:
             if (self.config['telegram_notify_finished'] is False):
                 return
-            # torrent_id = str(alert.handle.info_hash())
             custom_message = False
-            # get_torrent_status
-            # torrent_id = str(alert.handle.info_hash())
             torrent = component.get('TorrentManager')[torrent_id]
-            torrent_status = torrent.get_status({})
+            torrent_status = torrent.get_status(['name'])
             # Check if label shows up here
             log.debug("get_status for {}".format(torrent_id))
             log.debug(torrent_status)
@@ -1113,7 +1107,7 @@ class Core(CorePluginBase):
         log.debug(prelog() + 'Set config')
         dirty = False
         for key in list(config.keys()):
-            if ("categories" == key and cmp(self.config[key], config[key])) or \
+            if ("categories" == key and self.config[key] == config[key]) or \
                     self.config[key] != config[key]:
                 dirty = True
                 self.config[key] = config[key]
