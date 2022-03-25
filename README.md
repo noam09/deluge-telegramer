@@ -2,7 +2,7 @@
 
 <p align="center"><a href="https://github.com/noam09/deluge-telegramer" title="Telegramer"><img src="https://i.imgur.com/xXIPX44.png" alt="Telegramer"></a></p>
 
-![GitHub All Releases](https://img.shields.io/github/downloads/noam09/deluge-telegramer/total?style=flat-square) [![Deluge Version](https://img.shields.io/badge/deluge-1.3.15-blue?style=flat-square&logo=deluge)](https://github.com/noam09/deluge-telegramer/releases/tag/v1.3.1) [![Deluge Version](https://img.shields.io/badge/deluge-2.0.5-orange?style=flat-square&logo=deluge)](https://github.com/noam09/deluge-telegramer/releases/tag/v2.0.5.0)
+![GitHub All Releases](https://img.shields.io/github/downloads/noam09/deluge-telegramer/total?style=flat-square) [![Deluge Version](https://img.shields.io/badge/deluge-1.3.15-blue?style=flat-square&logo=deluge)](https://github.com/noam09/deluge-telegramer/releases/tag/v1.3.1) [![Deluge Version](https://img.shields.io/badge/deluge-2.0.5-yellowgreen?style=flat-square&logo=deluge)](https://github.com/noam09/deluge-telegramer/releases/tag/v2.0.5.0)
 
 [Telegramer](https://github.com/noam09/deluge-telegramer) is a [Deluge](https://deluge-torrent.org) plugin for sending notifications, adding and viewing torrents using [Telegram](https://telegram.org/) messenger. It features both a GTK and Web UI.
 
@@ -20,7 +20,7 @@ Since the bot runs locally and is owned by the same user running it, Telegramer 
 
 ## Requirements
 
-Currently Telegramer has been tested mainly on Linux using Deluge 1.3.15. Support for Windows is also available.
+Currently Telegramer has been tested mainly on Linux using Deluge 1.3.15. Support for Windows is also available. A [**beta** version](https://github.com/noam09/deluge-telegramer/releases/tag/v2.0.5.0) of the plugin is available for Deluge 2, tested on v2.0.5.
 Make sure you have Python [`setuptools`](https://pypi.python.org/pypi/setuptools#installation-instructions) installed in order to build the plugin.
 The plugin itself works with the [`python-telegram-bot`](https://github.com/python-telegram-bot/python-telegram-bot) wrapper, which comes pre-packaged.
 
