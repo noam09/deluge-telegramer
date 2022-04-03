@@ -1,4 +1,4 @@
-FROM python:2.7.18-alpine3.11 AS base
+FROM python:3.10-alpine3.15 AS base
 
 RUN mkdir -p /usr/src/app
 RUN mkdir -p /output

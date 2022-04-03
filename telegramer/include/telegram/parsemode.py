@@ -2,7 +2,7 @@
 # pylint: disable=R0903
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2018
+# Copyright (C) 2015-2022
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,12 +18,28 @@
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 """This module contains an object that represents a Telegram Message Parse Modes."""
+from typing import ClassVar
+
+from telegram import constants
+from telegram.utils.deprecate import set_new_attribute_deprecated
 
 
-class ParseMode(object):
+class ParseMode:
     """This object represents a Telegram Message Parse Modes."""
 
-    MARKDOWN = 'Markdown'
-    """:obj:`str`: 'Markdown'"""
-    HTML = 'HTML'
-    """:obj:`str`: 'HTML'"""
+    __slots__ = ('__dict__',)
+
+    MARKDOWN: ClassVar[str] = constants.PARSEMODE_MARKDOWN
+    """:const:`telegram.constants.PARSEMODE_MARKDOWN`\n
+
+    Note:
+        :attr:`MARKDOWN` is a legacy mode, retained by Telegram for backward compatibility.
+        You should use :attr:`MARKDOWN_V2` instead.
+    """
+    MARKDOWN_V2: ClassVar[str] = constants.PARSEMODE_MARKDOWN_V2
+    """:const:`telegram.constants.PARSEMODE_MARKDOWN_V2`"""
+    HTML: ClassVar[str] = constants.PARSEMODE_HTML
+    """:const:`telegram.constants.PARSEMODE_HTML`"""
+
+    def __setattr__(self, key: str, value: object) -> None:
+        set_new_attribute_deprecated(self, key, value)

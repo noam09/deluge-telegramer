@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2018
+# Copyright (C) 2015-2022
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -24,8 +24,10 @@ from telegram import TelegramObject
 class ReplyMarkup(TelegramObject):
     """Base class for Telegram ReplyMarkup Objects.
 
-    See :class:`telegram.ReplyKeyboardMarkup` and :class:`telegram.InlineKeyboardMarkup` for
+    See :class:`telegram.InlineKeyboardMarkup`, :class:`telegram.ReplyKeyboardMarkup`,
+    :class:`telegram.ReplyKeyboardRemove` and :class:`telegram.ForceReply` for
     detailed use.
 
     """
-    pass
+
+    __slots__ = ()

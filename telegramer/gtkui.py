@@ -42,7 +42,7 @@
 try:
     from deluge.log import LOG as log
 except Exception as e:
-    print 'Telegramer: Exception - %s' % str(e)
+    print("Telegramer: Exception - {}".format(str(e)))
 
 try:
     import gtk

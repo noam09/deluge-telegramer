@@ -43,10 +43,11 @@
 #
 
 from setuptools import setup, find_packages
+
 __plugin_name__ = "Telegramer"
 __author__ = "Noam"
 __author_email__ = "noamgit@gmail.com"
-__version__ = "1.3.1"
+__version__ = "2.0.5.0"
 __url__ = "https://github.com/noam09"
 __license__ = "GPLv3"
 __description__ = "Control Deluge using Telegram"
@@ -68,14 +69,15 @@ setup(
     long_description=__long_description__ if __long_description__ else __description__,
     packages=packages,
     package_data=__pkg_data__,
-    entry_points="""
-    [deluge.plugin.core]
-    %s = %s:CorePlugin
-    [deluge.plugin.gtkui]
-    %s = %s:GtkUIPlugin
-    [deluge.plugin.web]
-    %s = %s:WebUIPlugin
-    [telegramer.libpaths]
-    include = telegramer.include
-    """ % ((__plugin_name__, __plugin_name__.lower())*3)
+    entry_points="""[deluge.plugin.core]
+%s = %s:CorePlugin
+[deluge.plugin.gtkui]
+%s = %s:GtkUIPlugin
+[deluge.plugin.web]
+%s = %s:WebUIPlugin
+[deluge.plugin.gtk3ui]
+%s = %s:Gtk3UIPlugin
+[telegramer.libpaths]
+include = telegramer.include
+""" % ((__plugin_name__, __plugin_name__.lower())*4)
 )

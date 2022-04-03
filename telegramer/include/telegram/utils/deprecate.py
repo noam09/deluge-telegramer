@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2018
+# Copyright (C) 2015-2022
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -25,21 +25,23 @@ import warnings
 # seem like it's the user that issued the warning
 # We name it something else so that you don't get confused when you attempt to suppress it
 class TelegramDeprecationWarning(Warning):
-    pass
+    """Custom warning class for deprecations in this library."""
+
+    __slots__ = ()
 
 
-def warn_deprecate_obj(old, new, stacklevel=3):
-    warnings.warn(
-        '{0} is being deprecated, please use {1} from now on.'.format(old, new),
-        category=TelegramDeprecationWarning,
-        stacklevel=stacklevel)
-
-
-def deprecate(func, old, new):
-    """Warn users invoking old to switch to the new function."""
-
-    def f(*args, **kwargs):
-        warn_deprecate_obj(old, new)
-        return func(*args, **kwargs)
-
-    return f
+# Function to warn users that setting custom attributes is deprecated (Use only in __setattr__!)
+# Checks if a custom attribute is added by checking length of dictionary before & after
+# assigning attribute. This is the fastest way to do it (I hope!).
+def set_new_attribute_deprecated(self: object, key: str, value: object) -> None:
+    """Warns the user if they set custom attributes on PTB objects."""
+    org = len(self.__dict__)
+    object.__setattr__(self, key, value)
+    new = len(self.__dict__)
+    if new > org:
+        warnings.warn(
+            f"Setting custom attributes such as {key!r} on objects such as "
+            f"{self.__class__.__name__!r} of the PTB library is deprecated.",
+            TelegramDeprecationWarning,
+            stacklevel=3,
+        )
