@@ -35,4 +35,10 @@ jobs:
           PYTHON_VERSION=${{ matrix.python-version }} ./build-all.sh
           ls -alh out
           ls -alh out/dist
-          
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: |
+            out/dist
