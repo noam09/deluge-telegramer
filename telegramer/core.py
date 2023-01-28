@@ -47,7 +47,10 @@ import os
 import logging
 import traceback
 from time import strftime
-from deluge.log import LOG as log
+import time
+# from deluge.log import LOG as log
+import logging
+log = logging.getLogger(__name__)
 
 # import sys
 # reload(sys)
@@ -67,7 +70,7 @@ try:
     import urllib.request, urllib.error, urllib.parse
     from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot, Update)
     from telegram.ext import (Updater, CallbackContext, CommandHandler, MessageHandler,
-                              RegexHandler, ConversationHandler, BaseFilter, Filters)
+                              ConversationHandler, Filters)
     from telegram.utils.request import Request
     import threading
     from base64 import b64encode
@@ -248,7 +251,8 @@ class Core(CorePluginBase):
                              # 'rss':         self.cmd_add_rss,
                              'commands':    self.cmd_help}
 
-            log.debug(prelog() + 'Initialize bot')
+            self.torrent_manager = component.get("TorrentManager")
+            log.info(prelog() + 'Initialize bot')
 
             if self.config['telegram_token'] != DEFAULT_PREFS['telegram_token']:
                 if self.config['telegram_user']:
@@ -1050,10 +1054,22 @@ class Core(CorePluginBase):
             custom_message = False
             torrent = component.get('TorrentManager')[torrent_id]
             torrent_status = torrent.get_status(['name'])
+            # get the torrent added time from get_status
+            torrent_added = torrent.get_status(['time_added'])
+            # check if torrent_added time is in the last 5 minutes
+            # if it is, send the message
+            # if it is not, do not send the message
+            # this is to prevent the bot from sending a message when the bot is restarted
+            # and all the torrents are added
+            # this is a hacky way to do it, but it works
+            # if the torrent was added more than 5 minutes ago, do not send the message
+            if (torrent_added["time_added"] < (time.time() - 300)):
+                return
             # Check if label shows up here
             log.debug("get_status for {}".format(torrent_id))
             log.debug(torrent_status)
             message = _('Added Torrent *%(name)s*') % torrent_status
+            log.info(prelog() + 'Torrent added: %s' % torrent_added)
             # Check if custom message
             if self.config["message_added"] is not DEFAULT_PREFS["message_added"] \
                and len(self.config["message_added"]) > 0:
@@ -1096,10 +1112,15 @@ class Core(CorePluginBase):
             log.error(prelog() + 'Error in alert %s' %
                       str(e) + '\n' + traceback.format_exc())
 
-    def list_torrents(self, filter=lambda _: True):
-        return '\n'.join([format_torrent_info(t) for t
-                         in list(component.get('TorrentManager').torrents.values())
-                         if list(filter(t))] or [STRINGS['no_items']])
+    def list_torrents(self, filterz=lambda _: True):
+        selected_torrents = []
+        torrents = list(self.torrent_manager.torrents.values())
+        for t in torrents:
+            if filterz(t):
+                selected_torrents.append(format_torrent_info(t))
+        if len(selected_torrents) == 0:
+            return STRINGS['no_items']
+        return "\n".join(selected_torrents)
 
     @export
     def set_config(self, config):
