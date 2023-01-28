@@ -54,14 +54,15 @@ def load_libs():
     for name in egg.get_entry_map("telegramer.libpaths"):
         ep = egg.get_entry_info("telegramer.libpaths", name)
         location = "%s/%s" % (egg.location, ep.module_name.replace(".", "/"))
-        sys.path.append(location)
-        log.error("Appending to sys.path: '%s'" % location)
+        if location not in sys.path:
+            sys.path.append(location)
+        log.error("NOTANERROR: Appending to sys.path: '%s'" % location)
 
 
 class CorePlugin(PluginInitBase):
     def __init__(self, plugin_name):
         load_libs()
-        from core import Core as _plugin_cls
+        from .core import Core as _plugin_cls
         self._plugin_cls = _plugin_cls
         super(CorePlugin, self).__init__(plugin_name)
 
@@ -69,7 +70,7 @@ class CorePlugin(PluginInitBase):
 class GtkUIPlugin(PluginInitBase):
     def __init__(self, plugin_name):
         load_libs()
-        from gtkui import GtkUI as _plugin_cls
+        from .gtkui import GtkUI as _plugin_cls
         self._plugin_cls = _plugin_cls
         super(GtkUIPlugin, self).__init__(plugin_name)
 
@@ -77,6 +78,16 @@ class GtkUIPlugin(PluginInitBase):
 class WebUIPlugin(PluginInitBase):
     def __init__(self, plugin_name):
         load_libs()
-        from webui import WebUI as _plugin_cls
+        from .webui import WebUI as _plugin_cls
         self._plugin_cls = _plugin_cls
         super(WebUIPlugin, self).__init__(plugin_name)
+
+
+class Gtk3UIPlugin(PluginInitBase):
+    def __init__(self, plugin_name):
+        load_libs()
+        from .gtk3ui import Gtk3UI as GtkUIPluginClass
+        self._plugin_cls = GtkUIPluginClass
+        super(Gtk3UIPlugin, self).__init__(plugin_name)
+
+
