@@ -294,6 +294,16 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
                 if (!Ext.isEmpty(config['urllib3_proxy_kwargs_password'])) {
                     config['urllib3_proxy_kwargs_password'] = config['urllib3_proxy_kwargs_password']
                 }
+                if (!Ext.isEmpty(config['categories'])) {
+                    let i = 1;
+                    for (const [cat, dir] = Object.entries(config['categories'])) {
+                        config[`cat${i}`] = cat;
+                        config[`dir${i}`] = dir;
+                        i++;
+                        if (i >= 4) break;
+                    }
+                    delete config['categories'];
+                }
                 if (!Ext.isEmpty(config['cat1'])) {
                     config['cat1'] = config['cat1'];
                 }
