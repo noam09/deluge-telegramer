@@ -369,6 +369,18 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             if (!Ext.isEmpty(changed['dir3'])) {
                 changed['dir3'] = changed['dir3'];
             }
+
+            // reshape categories config
+            for (i = 1; i < 4; i++) {
+                changed['categories'] = {
+                    ...changed['categories'],
+                    [changed[`cat${i}`]]: changed[`dir${i}`]
+                }
+                delete changed[`cat${i}`];
+                
+                delete changed[`dir${i}`];
+            }
+
             deluge.client.telegramer.set_config(changed, {
                 success: this.onSetConfig,
                 scope: this,
