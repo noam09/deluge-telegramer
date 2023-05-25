@@ -294,6 +294,16 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
                 if (!Ext.isEmpty(config['urllib3_proxy_kwargs_password'])) {
                     config['urllib3_proxy_kwargs_password'] = config['urllib3_proxy_kwargs_password']
                 }
+                if (!Ext.isEmpty(config['categories'])) {
+                    let i = 1;
+                    for (const [cat, dir] = Object.entries(config['categories'])) {
+                        config[`cat${i}`] = cat;
+                        config[`dir${i}`] = dir;
+                        i++;
+                        if (i >= 4) break;
+                    }
+                    delete config['categories'];
+                }
                 if (!Ext.isEmpty(config['cat1'])) {
                     config['cat1'] = config['cat1'];
                 }
@@ -369,6 +379,18 @@ TelegramerPanel = Ext.extend(Ext.form.FormPanel, {
             if (!Ext.isEmpty(changed['dir3'])) {
                 changed['dir3'] = changed['dir3'];
             }
+
+            // reshape categories config
+            for (i = 1; i < 4; i++) {
+                changed['categories'] = {
+                    ...changed['categories'],
+                    [changed[`cat${i}`]]: changed[`dir${i}`]
+                }
+                delete changed[`cat${i}`];
+                
+                delete changed[`dir${i}`];
+            }
+
             deluge.client.telegramer.set_config(changed, {
                 success: this.onSetConfig,
                 scope: this,
