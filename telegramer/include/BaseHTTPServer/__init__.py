@@ -327,7 +327,7 @@ class BaseHTTPRequestHandler(SocketServer.StreamRequestHandler):
             method = getattr(self, mname)
             method()
             self.wfile.flush() #actually send the response if not already done.
-        except socket.timeout, e:
+        except socket.timeout as e:
             #a read or a write timed out.  Discard this connection
             self.log_error("Request timed out: %r", e)
             self.close_connection = 1
@@ -595,7 +595,7 @@ def test(HandlerClass = BaseHTTPRequestHandler,
     httpd = ServerClass(server_address, HandlerClass)
 
     sa = httpd.socket.getsockname()
-    print "Serving HTTP on", sa[0], "port", sa[1], "..."
+    print("Serving HTTP on", sa[0], "port", sa[1], "...")
     httpd.serve_forever()
 
 

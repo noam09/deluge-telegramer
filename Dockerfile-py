@@ -8,5 +8,14 @@ WORKDIR /usr/src/app
 COPY telegramer /usr/src/app/telegramer
 COPY setup.py /usr/src/app/setup.py
 COPY LICENSE /usr/src/app/LICENSE
+COPY requirements.txt /usr/src/app/requirements.txt
+
+WORKDIR /usr/src/app/telegramer
+RUN pip install --no-cache-dir -t ./include -r /usr/src/app/requirements.txt
+
+WORKDIR /usr/src/app/telegramer/include
+RUN rm -rf *.dist-info __pycache__ *.egg-info setuptools
+
+WORKDIR /usr/src/app
 
 RUN python setup.py bdist_egg
