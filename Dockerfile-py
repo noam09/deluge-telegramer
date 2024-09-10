@@ -5,6 +5,8 @@ RUN mkdir -p /usr/src/app
 RUN mkdir -p /output
 WORKDIR /usr/src/app
 
+RUN pip install --no-cache-dir setuptools
+
 COPY telegramer /usr/src/app/telegramer
 COPY setup.py /usr/src/app/setup.py
 COPY LICENSE /usr/src/app/LICENSE
